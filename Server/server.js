@@ -6,7 +6,7 @@ const cors = require("cors");
 const mime = require("mime");
 
 const allowedOrigins = [
-  "https://interactivearchitecture.onrender.com",
+  "https://webfighting.onrender.com",
   "http://localhost:5173",
   //"http://localhost:5174",
 ]; // For dev and production
