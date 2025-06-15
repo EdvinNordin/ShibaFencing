@@ -29,8 +29,8 @@ function animate() {
 
   if(ready) {
     serverMessage.style.display = "none";
-    serverMessage.style.font-size = "80px";
-    serverMessage.style.z-index = "1000";
+    serverMessage.style.fontSize = "80px";
+    serverMessage.style.zIndex = "1000";
   }
   
   delta = clock.getDelta();
