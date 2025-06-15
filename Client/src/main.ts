@@ -18,6 +18,11 @@ loadModels(floorGrid, wallGrid);
 const clock = new THREE.Clock();
 let delta;
 const serverMessage = document.getElementById("server") as HTMLElement;
+const all = document.getElementById("all") as HTMLElement;
+
+serverMessage.style.fontSize = "80px";
+serverMessage.style.zIndex = "1000";
+all.style.display = "none";
 
 // window.onerror = function () {
 //   location.reload();
@@ -29,9 +34,9 @@ function animate() {
 
   if(ready) {
     serverMessage.style.display = "none";
-    serverMessage.style.fontSize = "80px";
-    serverMessage.style.zIndex = "1000";
+    all.style.display = "block";
   }
+  
   
   delta = clock.getDelta();
 
