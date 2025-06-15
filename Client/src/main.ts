@@ -27,8 +27,12 @@ animate();
 function animate() {
   requestAnimationFrame(animate);
 
-  if(ready) serverMessage.style.display = "none"; 
-
+  if(ready) {
+    serverMessage.style.display = "none";
+    serverMessage.style.font-size = "80px";
+    serverMessage.style.z-index = "1000";
+  }
+  
   delta = clock.getDelta();
 
   updatePlayers(delta, ready);
