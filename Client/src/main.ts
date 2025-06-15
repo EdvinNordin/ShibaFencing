@@ -17,6 +17,7 @@ loadModels(floorGrid, wallGrid);
 
 const clock = new THREE.Clock();
 let delta;
+const serverMessage = document.getElementById("server") as HTMLElement;
 
 // window.onerror = function () {
 //   location.reload();
@@ -25,6 +26,8 @@ let delta;
 animate();
 function animate() {
   requestAnimationFrame(animate);
+
+  if(ready) serverMessage.style.display = "none"; 
 
   delta = clock.getDelta();
 
