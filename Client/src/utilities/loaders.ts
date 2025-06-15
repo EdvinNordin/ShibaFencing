@@ -114,7 +114,7 @@ export function loadModels(
 
   let planeMesh = new THREE.Mesh();
   planeMesh.geometry = new THREE.PlaneGeometry(1000, 1000, 1, 1);
-  planeMesh.rotation.x = -Math.PI / 2;
+  //planeMesh.rotation.x = -Math.PI / 2;
 
   // const texture = new THREE.TextureLoader().load("/stacked-stones.jpg");
   // texture.wrapS = THREE.RepeatWrapping;
