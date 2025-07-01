@@ -1,0 +1,33 @@
+{
+  "name": "interactive_architecture",
+  "description": "my node project",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d": "^0.17.3",
+    "@dimforge/rapier3d-compat": "^0.17.3",
+    "express": "^4.21.2",
+    "nipplejs": "^0.10.2",
+    "screenfull": "^6.0.2",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "three": "^0.172.0",
+    "three-stdlib": "^2.35.11"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@types/node": "^22.10.7",
+    "@types/three": "^0.172.0",
+    "babel-loader": "^9.2.1",
+    "parcel": "^2.13.3",
+    "parcel-plugin-clean-dist": "^0.0.6",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7"
+  }
+}
