@@ -1,8 +1,8 @@
 using Fleck;
 using System.Text.Json;
 
-//var allSockets = new List<IWebSocketConnection>();
-var websocketServer = new WebSocketServer("ws://0.0.0.0:8181");
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8181";
+var websocketServer = new WebSocketServer($"ws://0.0.0.0:{port}");
 
 Dictionary<Guid, (IWebSocketConnection connection, PlayerState state)> Players = [];
 
