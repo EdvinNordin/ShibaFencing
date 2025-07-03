@@ -3,7 +3,7 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { game } from "./main";
 import { Player } from "./Player";
 
-export const socket = new WebSocket("ws://localhost:8181");
+export const socket = new WebSocket("https://webfightingbackend-906738005249.europe-north2.run.app");
 
 // Handle incoming events
 socket.onmessage = (event) => {
