@@ -1,0 +1,8 @@
+/home/edvin/Documents/WebFighting/Server/bin/Release/net9.0/publish/WebFighting
+/home/edvin/Documents/WebFighting/Server/bin/Release/net9.0/publish/appsettings.Development.json
+/home/edvin/Documents/WebFighting/Server/bin/Release/net9.0/publish/appsettings.json
+/home/edvin/Documents/WebFighting/Server/bin/Release/net9.0/publish/WebFighting.dll
+/home/edvin/Documents/WebFighting/Server/bin/Release/net9.0/publish/WebFighting.deps.json
+/home/edvin/Documents/WebFighting/Server/bin/Release/net9.0/publish/WebFighting.runtimeconfig.json
+/home/edvin/Documents/WebFighting/Server/bin/Release/net9.0/publish/WebFighting.pdb
+/home/edvin/Documents/WebFighting/Server/bin/Release/net9.0/publish/Fleck.dll

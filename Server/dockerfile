@@ -1,22 +1,23 @@
-# Use the official .NET SDK image to build and publish the app
+# ----------- Build Stage -------------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /app
+WORKDIR /src
 
-# Copy csproj and restore as distinct layers
-COPY *.csproj ./
+# Copy everything and restore
+COPY . .
 RUN dotnet restore
 
-# Copy everything else and build
-COPY . ./
-RUN dotnet publish -c Release -o out
+# Build and publish the app
+RUN dotnet publish -c Release -o /app
 
-# Build runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+# ----------- Runtime Stage -------------
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
-COPY --from=build /app/out ./
 
-# Expose the port your WebSocket server listens on
+# Copy the published app from build stage
+COPY --from=build /app .
+
+# Expose the WebSocket server port
 EXPOSE 8181
 
-# Start the application
+# Run the server
 ENTRYPOINT ["dotnet", "WebFighting.dll"]
