@@ -29,3 +29,4 @@
 /home/edvin/Documents/WebFighting/Server/bin/Debug/net9.0/Fleck.dll
 /home/edvin/Documents/WebFighting/Server/obj/Debug/net9.0/WebFighting.csproj.AssemblyReference.cache
 /home/edvin/Documents/WebFighting/Server/obj/Debug/net9.0/WebFight.12DE78F1.Up2Date
+/home/edvin/Documents/WebFighting/Server/obj/Debug/net9.0/WebFighting.sourcelink.json

@@ -1,8 +1,7 @@
 import * as THREE from "three";
-import { Player } from "./Player";
 import RAPIER from "@dimforge/rapier3d-compat";
-import { socket } from "./Network";
 import { game } from "./main";
+import { Player } from "./Player";
 
 export class Controller {
   player: Player;
@@ -21,7 +20,7 @@ export class Controller {
     this.input = new InputManager();
   }
 
-  move(deltaTime: number) {
+  move(deltaTime: number, socket: WebSocket) {
     const threeDirection = new THREE.Vector3(0, 0, 0);
     let movement = false;
     if (this.input.isPressed("w")) (threeDirection.z -= 1), (movement = true);
@@ -29,6 +28,7 @@ export class Controller {
     if (this.input.isPressed("a")) (threeDirection.x -= 1), (movement = true);
     if (this.input.isPressed("d")) (threeDirection.x += 1), (movement = true);
 
+    const rotation = this.updateCameraOrbit(this.input);
     if (movement) {
       threeDirection.normalize();
       threeDirection.multiplyScalar(this.player.speed * deltaTime);
@@ -49,7 +49,18 @@ export class Controller {
       };
 
       game.rigidBody.setNextKinematicTranslation(nextPos);
+
       this.player.updatePosition(nextPos);
+
+      if(rotation !== this.player.rotation){
+        this.player.updateRotation(rotation);
+        socket.send(
+          JSON.stringify({
+            action: "Player Rotate",
+            rotation: { x: rotation.x, y: rotation.y, z: rotation.z, w: rotation.w  },
+          })
+        )
+      }
 
       socket.send(
         JSON.stringify({
@@ -59,35 +70,42 @@ export class Controller {
       );
     }
 
-    updateCameraOrbit(this.camera, this.player.mesh.position, this.input);
   }
-}
 
-// MAGIC LOOK INTO LATER
-function updateCameraOrbit(
-  camera: THREE.PerspectiveCamera,
-  target: THREE.Vector3,
-  input: InputManager
-) {
-  // Adjust angle with input
-  if (input.isPressed("ArrowLeft")) camera.userData.orbitAngle += 0.05;
-  if (input.isPressed("ArrowRight")) camera.userData.orbitAngle -= 0.05;
-  // Store angle as a property of the camera (or globally)
-  if (camera.userData.orbitAngle === undefined) camera.userData.orbitAngle = 0;
-// Store angle as a property of the camera (or globally)
-  if (camera.userData.orbitAngle === undefined) camera.userData.orbitAngle = 0;
+  // MAGIC LOOK INTO THIS LATER
+  updateCameraOrbit(input: InputManager) {
+    let rotateBool = false;
+    // Adjust angle with input
+    if (input.isPressed("ArrowLeft")) this.camera.userData.orbitAngle += 0.05, rotateBool = true;
+    if (input.isPressed("ArrowRight")) this.camera.userData.orbitAngle -= 0.05, rotateBool = true;
+    if (input.isPressed("j")) this.camera.userData.orbitAngle += 0.05, rotateBool = true;
+    if (input.isPressed("l")) this.camera.userData.orbitAngle -= 0.05, rotateBool = true;
 
+    // Store angle as a property of the camera (or globally)
+    if (this.camera.userData.orbitAngle === undefined) this.camera.userData.orbitAngle = 0;
 
-  // Set camera position using polar coordinates
-  const radius = 10;
-  const height = 5;
-  const angle = camera.userData.orbitAngle;
+    // Set camera position using polar coordinates
+    const radius = 10;
+    const height = 5;
+    const angle = this.camera.userData.orbitAngle;
 
-  camera.position.x = target.x + radius * Math.sin(angle);
-  camera.position.z = target.z + radius * Math.cos(angle);
-  camera.position.y = target.y + height;
+    const target = new THREE.Vector3(
+      this.player.position.x,
+      this.player.position.y,
+      this.player.position.z
+    );
 
-  camera.lookAt(target);
+    this.camera.position.x = target.x + radius * Math.sin(angle);
+    this.camera.position.z = target.z + radius * Math.cos(angle);
+    this.camera.position.y = target.y + height;
+  
+    this.camera.lookAt(target)
+    
+    const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle + Math.PI);
+    
+    return rotation;
+    
+  }
 }
 
 export class InputManager {

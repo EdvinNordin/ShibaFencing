@@ -1,20 +1,27 @@
 import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
+import { Weapon } from "./Weapon"; // Assuming Weapon is defined in Weapon.ts
 
 export class Player {
-  mesh: THREE.Mesh;
+  mesh: THREE.Object3D;
   position: RAPIER.Vector3;
+  rotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
   health: number = 100;
   speed: number = 10;
   ID: string;
+  weapon: Weapon;
 
-  constructor(world: RAPIER.World, position: RAPIER.Vector3 = new RAPIER.Vector3(0, 0, 0), ID: string = crypto.randomUUID()) {
-    this.ID = ID;
+  constructor(model: THREE.Object3D, position: RAPIER.Vector3 = new RAPIER.Vector3(0, 0, 0)) {
+    this.ID = crypto.randomUUID()
 
-    const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
-    const boxMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    this.mesh = new THREE.Mesh(boxGeometry, boxMaterial);
+    this.mesh = model;
+    
     this.mesh.position.set(position.x, position.y, position.z);
+
+    this.weapon = new Weapon();
+    this.mesh.add(this.weapon.mesh);
+    this.weapon.mesh.position.set(0, -0.1, 0.3);
+    this.weapon.mesh.rotation.set(Math.PI/2, 0, Math.PI/2);
     
     this.position = position;
   }
@@ -23,5 +30,10 @@ export class Player {
     this.mesh.position.set(position.x, position.y, position.z);
     this.position = position;
   }
-}
 
+  updateRotation(rotation: THREE.Quaternion) {
+    this.mesh.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+    this.rotation = rotation;
+  }
+  
+}

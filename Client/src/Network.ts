@@ -1,64 +1,66 @@
 import * as THREE from "three";
+import RAPIER from "@dimforge/rapier3d-compat";
 import { game } from "./main";
 import { Player } from "./Player";
-import RAPIER from "@dimforge/rapier3d-compat";
-import { Game } from "./Game";
 
 export const socket = new WebSocket("ws://localhost:8181");
 
-export function Network() {
-  // Handle incoming events
-  socket.onmessage = (event) => {
-    // The server sends JSON, so parse it
-    const data = JSON.parse(event.data);
-    switch (data.action) {
-      case "Set ID":
-        game.player.ID = data.ID;
-        console.log(`Player ID set to: ${game.player.ID}`);
-        break;
+// Handle incoming events
+socket.onmessage = (event) => {
+  // The server sends JSON, so parse it
+  const data = JSON.parse(event.data);
+  switch (data.action) {
+    case "Set ID":
+      game.player.ID = data.ID;
+      break;
 
-      case "Send Old Players":
-        let amount = 0;
-        data.players.forEach((playerData: any) => {
-            if (playerData.ID !== game.player.ID) {
-              let newPlayer = new Player(game.world, new RAPIER.Vector3(playerData.position[0], playerData.position[1], playerData.position[2]));
-              newPlayer.ID = playerData.ID;
-              newPlayer.health = playerData.health;
-              game.addPlayer(newPlayer);
-              amount++;
-            }
-        });
-        console.log(`Received ${amount} players from server.`);
-        break;
+    case "Send Old Players":
+      let amount = 0;
+      data.players.forEach((playerData: any) => {
+          let newPlayer = new Player(game.model.clone(), new RAPIER.Vector3(playerData.position[0], playerData.position[1], playerData.position[2]));
+          newPlayer.ID = playerData.ID;
+          newPlayer.health = playerData.health;
+          newPlayer.updateRotation(new THREE.Quaternion(playerData.rotation[0], playerData.rotation[1], playerData.rotation[2], playerData.rotation[3]));
+          game.addPlayer(newPlayer);
+          amount++;
+      });
+      break;
 
-      case "New Player":
-        let newPlayer = new Player(game.world);
-        newPlayer.ID = data.ID;
-        game.addPlayer(newPlayer);
-        console.log(`New player connected: ${data.ID}`);
-        break;
-          
-      case "Player Move":
-        const currPlayer = game.findPlayer(data.ID);
-        if (currPlayer) {
-          currPlayer.updatePosition(data.position);
-        }
-        //console.log("Another player has moved")
-        break;
+    case "New Player":
+      let newPlayer = new Player(game.model.clone());
+      newPlayer.ID = data.ID;
+      game.addPlayer(newPlayer);
+      break;
+        
+    case "Player Move":
+      const movePlayer = game.findPlayer(data.ID);
+      //console.log("Player Move", data);
+      if (movePlayer) {
+        movePlayer.updatePosition(new RAPIER.Vector3(data.position.posX, data.position.posY, data.position.posZ));
+      }
+      break;
 
-      case "Remove Player":
-        const disconnectedPlayer = game.findPlayer(data.ID);
-        if (disconnectedPlayer) {
-          game.removePlayer(disconnectedPlayer);
-        }
-        console.log(`A player has disconnected`);
-        break;
-    }
+    case "Player Rotate":
+      const rotatePlayer = game.findPlayer(data.ID);
+
+      //console.log("Player Rot", data.rotation.rotY);
+      if (rotatePlayer) {
+        rotatePlayer.updateRotation(new THREE.Quaternion(data.rotation.rotX, data.rotation.rotY, data.rotation.rotZ, data.rotation.rotW));
+      }
+      break;
+
+    case "Remove Player":
+      const disconnectedPlayer = game.findPlayer(data.ID);
+      if (disconnectedPlayer) {
+        game.removePlayer(disconnectedPlayer);
+      }
+      break;
+  }
+};
+
+ socket.onopen = () => {
+    console.log("Opened connection to server");
   };
-
-  window.addEventListener("beforeunload", () => {
-    //socket.send(JSON.stringify({ action: "Player Disconnected", ID: player.id }));
-  });
 
   socket.onclose = () => {
     console.log("Disconnected from server");
@@ -67,4 +69,3 @@ export function Network() {
   socket.onerror = (error) => {
     console.error("WebSocket error:", error);
   };
-}

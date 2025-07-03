@@ -1,23 +1,44 @@
 import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Game } from "./Game";
-import { Network } from "./Network";
+import { loadModel, loadWeapon } from "./Loader";
 
 export let game: Game;
+export let weapon: THREE.Object3D;
 
 async function init() {
   await RAPIER.init();
 
-  game = new Game();
+  const model = await loadModel();
+  weapon = await loadWeapon()
 
-  let groundColliderDesc = RAPIER.ColliderDesc.cuboid(10.0, 1.0, 10.0).setTranslation(0, 0, 0);
+  game = new Game(model.clone());
+
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+  directionalLight.position.set(12, 10, 8);
+  directionalLight.castShadow = true;
+  directionalLight.shadow.camera.top = 50;
+  directionalLight.shadow.camera.bottom = -50;
+  directionalLight.shadow.camera.left = -50;
+  directionalLight.shadow.camera.right = 50;
+  directionalLight.shadow.mapSize.width = 2048;
+  directionalLight.shadow.mapSize.height = 2048;
+  directionalLight.shadow.camera.near = 0.5;
+  directionalLight.shadow.camera.far = 50;
+  game.scene.add(directionalLight);
+
+  let groundGeometry = new THREE.BoxGeometry(20, 1, 20);
+  let groundMaterial = new THREE.MeshStandardMaterial({ color: 0x1a7b29 });
+  let groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+  groundMesh.receiveShadow = true;
+  groundMesh.position.set(0, -1.5, 0);
+  game.scene.add(groundMesh);
+
+  let groundColliderDesc = RAPIER.ColliderDesc.cuboid(10.0, 0.5, 10.0).setTranslation(0, -1, 0);
   game.world.createCollider(groundColliderDesc);
 
 
   const debugRenderer = new RapierDebugRenderer(game.scene, game.world);
-
-  // Start networking after game is ready
-  Network();
 
   // Add event listeners for window resize
   window.addEventListener("resize", () => {
@@ -25,12 +46,14 @@ async function init() {
     game.camera.updateProjectionMatrix();
     game.renderer.setSize(window.innerWidth, window.innerHeight);
   });
-
+ 
   const deltaTime = 1 / 60; // Fixed time step for physics
 
+  const { socket } = await import("./Network");
+
   function update() {
-    debugRenderer.update();
-    game.controller.move(deltaTime);
+    //debugRenderer.update();
+    game.controller.move(deltaTime, socket);
     game.world.step();
     game.renderer.render(game.scene, game.camera);
   }

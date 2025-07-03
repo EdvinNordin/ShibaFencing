@@ -6,13 +6,13 @@ var websocketServer = new WebSocketServer("ws://0.0.0.0:8181");
 
 Dictionary<Guid, (IWebSocketConnection connection, PlayerState state)> Players = [];
 
+Console.WriteLine("Current Amount of players: " + Players.Count);
 
 websocketServer.Start(connection =>
 {
     // new player connects
     connection.OnOpen = () =>
         {
-            Console.WriteLine("Current Amount of players: " + Players.Count);
             // Set the ID for the new player
             var setID = new
             {
@@ -24,6 +24,7 @@ websocketServer.Start(connection =>
             if (Players.Count > 0)
             {
                 // Send all existing players to the new player
+
                 var sendOldPlayers = new
                 {
                     action = "Send Old Players",
@@ -31,6 +32,7 @@ websocketServer.Start(connection =>
                     {
                         ID = p.Key,
                         position = p.Value.state.position,
+                        rotation = p.Value.state.rotation,
                         health = p.Value.state.health
                     }).ToList()
                 };
@@ -53,6 +55,8 @@ websocketServer.Start(connection =>
             }
 
             Players.Add(connection.ConnectionInfo.Id, (connection, new PlayerState(0, 0, 0)));
+
+            Console.WriteLine("Current Amount of players: " + Players.Count);
         };
 
     // player disconnects
@@ -87,29 +91,53 @@ websocketServer.Start(connection =>
                 // player moves thus updating their position to everyone else
                 case "Player Move":
                     var position = doc.RootElement.GetProperty("position");
-                    var x = position.GetProperty("x").GetDouble();
-                    var y = position.GetProperty("y").GetDouble();
-                    var z = position.GetProperty("z").GetDouble();
+                    var posX = position.GetProperty("x").GetDouble();
+                    var posY = position.GetProperty("y").GetDouble();
+                    var posZ = position.GetProperty("z").GetDouble();
 
-                    Players[connection.ConnectionInfo.Id].state.setPosition(x, y, z);
+                    Players[connection.ConnectionInfo.Id].state.setPosition(posX, posY, posZ);
 
-                    var moveMsg = new
+                    var playerMove = new
                     {
                         action = "Player Move",
-                        position = new { x, y, z },
+                        position = new { posX, posY, posZ},
                         ID = connection.ConnectionInfo.Id
                     };
 
                     foreach (var player in Players)
                     {
-                        if (player.Key != connection.ConnectionInfo.Id) player.Value.connection.Send(JsonSerializer.Serialize(moveMsg));
+                        if (player.Key != connection.ConnectionInfo.Id) player.Value.connection.Send(JsonSerializer.Serialize(playerMove));
+                    }
+                    break;
+
+                case "Player Rotate":
+                    var rotation = doc.RootElement.GetProperty("rotation");
+                    var rotX = rotation.GetProperty("x").GetDouble();
+                    var rotY = rotation.GetProperty("y").GetDouble();
+                    var rotZ = rotation.GetProperty("z").GetDouble();
+                    var rotW = rotation.GetProperty("w").GetDouble();
+
+                    Players[connection.ConnectionInfo.Id].state.setRotation(rotX, rotY, rotZ, rotW);
+
+                    var playerRotate = new
+                    {
+                        action = "Player Rotate",
+                        rotation = new { rotX, rotY, rotZ, rotW },
+                        ID = connection.ConnectionInfo.Id
+                    };
+
+                    foreach (var player in Players)
+                    {
+                        if (player.Key != connection.ConnectionInfo.Id) player.Value.connection.Send(JsonSerializer.Serialize(playerRotate));
                     }
                     break;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error handling message: " + ex.Message);
+            Console.WriteLine("Error parsing message: " + message);
+            Console.WriteLine("Error: " + ex.Message);
+            Console.WriteLine("Error source: " + ex.Source);
         }
     };
 });
@@ -119,17 +147,20 @@ WebApplication.CreateBuilder(args).Build().Run();
 class PlayerState
 {
     public double[] position { get; set; }
+    public double[] rotation { get; set; }
     public int health { get; set; }
 
     public PlayerState(double x, double y, double z)
     {
         position = [x, y, z];
+        rotation = [0, 0, 0, 1];
         health = 100; // Default health
     }
 
     public PlayerState()
     {
         position = new double[3] { 0, 0, 0 };
+        rotation = new double[4] { 0, 0, 0, 1 };
         health = 100;
     }
 
@@ -138,5 +169,12 @@ class PlayerState
         position[0] = x;
         position[1] = y;
         position[2] = z;
+    }
+    public void setRotation(double x, double y, double z, double w)
+    {
+        rotation[0] = x;
+        rotation[1] = y;
+        rotation[2] = z;
+        rotation[3] = w;
     }
 }

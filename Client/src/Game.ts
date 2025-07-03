@@ -12,9 +12,13 @@ export class Game {
     controller: Controller;
     player: Player;
     rigidBody: RAPIER.RigidBody;
+    model: THREE.Object3D;
 
-    constructor() {
+    constructor(model: THREE.Object3D) {
         this.scene = new THREE.Scene();
+        //const texture = new THREE.TextureLoader().load( "Haze.png" );
+        //this.scene.background = texture; // Set a background texture
+        this.scene.background = new THREE.Color(0xd2f3d7);
 
         let gravity = { x: 0.0, y: -9.81, z: 0.0 };
         this.world = new RAPIER.World(gravity);
@@ -26,13 +30,12 @@ export class Game {
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.VSMShadowMap;
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(this.renderer.domElement);
 
-        this.players = new Map<string, Player>();     
-
-        this.player = new Player(this.world);
+        this.players = new Map<string, Player>();  
+        this.model = model;
+        this.player = new Player(model);
         this.addPlayer(this.player);
 
         
@@ -46,6 +49,7 @@ export class Game {
     addPlayer(newPlayer: Player) {
         this.players.set(newPlayer.ID, newPlayer);
         this.scene.add(newPlayer.mesh);
+        //this.scene.add(newPlayer.weapon.mesh);
     }
 
     removePlayer(oldPlayer: Player) {
