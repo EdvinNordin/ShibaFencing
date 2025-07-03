@@ -34,7 +34,6 @@ socket.onmessage = (event) => {
         
     case "Player Move":
       const movePlayer = game.findPlayer(data.ID);
-      //console.log("Player Move", data);
       if (movePlayer) {
         movePlayer.updatePosition(new RAPIER.Vector3(data.position.posX, data.position.posY, data.position.posZ));
       }
