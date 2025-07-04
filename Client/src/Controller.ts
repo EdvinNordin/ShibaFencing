@@ -28,7 +28,7 @@ export class Controller {
     if (this.input.isPressed("a")) (threeDirection.x -= 1), (movement = true);
     if (this.input.isPressed("d")) (threeDirection.x += 1), (movement = true);
 
-    const rotation = this.updateCameraOrbit(this.input);
+    this.updateCameraOrbit(this.input);
     if (movement) {
       threeDirection.normalize();
       threeDirection.multiplyScalar(this.player.speed * deltaTime);
@@ -53,18 +53,12 @@ export class Controller {
       this.player.updatePosition(nextPos);
 
       const from = new THREE.Vector3(0, 0, 1); // forward
-const to = threeDirection.clone().normalize();
+      const to = threeDirection.clone().normalize();
 
       const quat = new THREE.Quaternion().setFromUnitVectors(from, to);
 
-      if(quat !== this.player.rotation){
-        this.player.updateRotation(quat);
-        socket.send(
-          JSON.stringify({
-            action: "Player Rotate",
-            rotation: { x: quat.x, y: quat.y, z: quat.z, w: quat.w  },
-          })
-        )
+      if(quat !== this.player.targetRotation){
+        this.player.updateTargetRotation(quat);
       }
 
       socket.send(
@@ -75,6 +69,15 @@ const to = threeDirection.clone().normalize();
       );
     }
 
+    if(!this.player.targetRotation.equals(this.player.rotation)){
+      this.player.updateRotation();
+      socket.send(
+          JSON.stringify({
+            action: "Player Rotate",
+            rotation: { x: this.player.rotation.x, y: this.player.rotation.y, z: this.player.rotation.z, w: this.player.rotation.w  },
+          })
+        )
+    }
   }
 
   // MAGIC LOOK INTO THIS LATER
@@ -106,9 +109,9 @@ const to = threeDirection.clone().normalize();
   
     this.camera.lookAt(target)
     
-    const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle + Math.PI);
+    /*const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle + Math.PI);
     
-    return rotation;
+    return rotation;*/
     
   }
 }

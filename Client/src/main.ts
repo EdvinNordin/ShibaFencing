@@ -5,14 +5,15 @@ import { loadModel, loadWeapon } from "./Loader";
 
 export let game: Game;
 export let weapon: THREE.Object3D;
+export let model: THREE.Object3D;
 
 async function init() {
   await RAPIER.init();
 
-  const model = await loadModel();
+  model = await loadModel();
   weapon = await loadWeapon()
 
-  game = new Game(model.clone());
+  game = new Game();
 
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
   directionalLight.position.set(12, 10, 8);

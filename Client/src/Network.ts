@@ -3,7 +3,8 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { game } from "./main";
 import { Player } from "./Player";
 
-export const socket = new WebSocket("https://webfightingbackend-906738005249.europe-north2.run.app");
+export const socket = new WebSocket(import.meta.env.VITE_BACKEND_URL);
+//export const socket = new WebSocket("https://webfightingbackend-906738005249.europe-north2.run.app");
 //export const socket = new WebSocket("ws://localhost:8181"); // Use this for local development
 
 // Handle incoming events
@@ -18,17 +19,17 @@ socket.onmessage = (event) => {
     case "Send Old Players":
       let amount = 0;
       data.players.forEach((playerData: any) => {
-          let newPlayer = new Player(game.model.clone(), new RAPIER.Vector3(playerData.position[0], playerData.position[1], playerData.position[2]));
+          let newPlayer = new Player(new RAPIER.Vector3(playerData.position[0], playerData.position[1], playerData.position[2]));
           newPlayer.ID = playerData.ID;
           newPlayer.health = playerData.health;
-          newPlayer.updateRotation(new THREE.Quaternion(playerData.rotation[0], playerData.rotation[1], playerData.rotation[2], playerData.rotation[3]));
+          newPlayer.forceUpdateRotation(new THREE.Quaternion(playerData.rotation[0], playerData.rotation[1], playerData.rotation[2], playerData.rotation[3]));
           game.addPlayer(newPlayer);
           amount++;
       });
       break;
 
     case "New Player":
-      let newPlayer = new Player(game.model.clone());
+      let newPlayer = new Player();
       newPlayer.ID = data.ID;
       game.addPlayer(newPlayer);
       break;
@@ -45,7 +46,7 @@ socket.onmessage = (event) => {
 
       //console.log("Player Rot", data.rotation.rotY);
       if (rotatePlayer) {
-        rotatePlayer.updateRotation(new THREE.Quaternion(data.rotation.rotX, data.rotation.rotY, data.rotation.rotZ, data.rotation.rotW));
+        rotatePlayer.forceUpdateRotation(new THREE.Quaternion(data.rotation.rotX, data.rotation.rotY, data.rotation.rotZ, data.rotation.rotW));
       }
       break;
 

@@ -28,6 +28,6 @@
     "parcel": "^2.13.3",
     "parcel-plugin-clean-dist": "^0.0.6",
     "typescript": "^5.7.3",
-    "vite": "^6.0.7"
+    "vite": "^6.3.5"
   }
 }

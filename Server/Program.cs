@@ -6,7 +6,7 @@ var websocketServer = new WebSocketServer($"ws://0.0.0.0:{port}");
 
 Dictionary<Guid, (IWebSocketConnection connection, PlayerState state)> Players = [];
 
-Console.WriteLine("Current Amount of players: " + Players.Count);
+//Console.WriteLine("Current Amount of players: " + Players.Count);
 
 websocketServer.Start(connection =>
 {
@@ -56,7 +56,7 @@ websocketServer.Start(connection =>
 
             Players.Add(connection.ConnectionInfo.Id, (connection, new PlayerState(0, 0, 0)));
 
-            Console.WriteLine("Current Amount of players: " + Players.Count);
+            //Console.WriteLine("Current Amount of players: " + Players.Count);
         };
 
     // player disconnects
@@ -76,7 +76,7 @@ websocketServer.Start(connection =>
                 player.Value.connection.Send(JsonSerializer.Serialize(disconnectMsg));
             }
             
-            Console.WriteLine("Current Amount of players: " + Players.Count);
+            //Console.WriteLine("Current Amount of players: " + Players.Count);
         };
 
     connection.OnMessage = message =>
@@ -118,7 +118,7 @@ websocketServer.Start(connection =>
                     var rotW = rotation.GetProperty("w").GetDouble();
 
                     Players[connection.ConnectionInfo.Id].state.setRotation(rotX, rotY, rotZ, rotW);
-
+                    //Console.WriteLine("Player Rot: " + rotX + ", " + rotY + ", " + rotZ + ", " + rotW);
                     var playerRotate = new
                     {
                         action = "Player Rotate",
@@ -135,9 +135,9 @@ websocketServer.Start(connection =>
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error parsing message: " + message);
-            Console.WriteLine("Error: " + ex.Message);
-            Console.WriteLine("Error source: " + ex.Source);
+            //Console.WriteLine("Error parsing message: " + message);
+            //Console.WriteLine("Error: " + ex.Message);
+            //Console.WriteLine("Error source: " + ex.Source);
         }
     };
 });

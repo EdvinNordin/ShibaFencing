@@ -2,6 +2,7 @@ import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Player } from "./Player";
 import { Controller } from "./Controller";
+import { model } from "./main"; 
 
 export class Game {
     scene: THREE.Scene;
@@ -12,9 +13,8 @@ export class Game {
     controller: Controller;
     player: Player;
     rigidBody: RAPIER.RigidBody;
-    model: THREE.Object3D;
 
-    constructor(model: THREE.Object3D) {
+    constructor() {
         this.scene = new THREE.Scene();
         //const texture = new THREE.TextureLoader().load( "Haze.png" );
         //this.scene.background = texture; // Set a background texture
@@ -34,8 +34,7 @@ export class Game {
         document.body.appendChild(this.renderer.domElement);
 
         this.players = new Map<string, Player>();  
-        this.model = model;
-        this.player = new Player(model);
+        this.player = new Player();
         this.addPlayer(this.player);
 
         
