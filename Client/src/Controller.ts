@@ -8,6 +8,8 @@ export class Controller {
   world: RAPIER.World;
   camera: THREE.PerspectiveCamera;
   input: InputManager;
+  targetRotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
+  velocity: RAPIER.Vector3;
 
   constructor(
     player: Player,
@@ -18,6 +20,7 @@ export class Controller {
     this.world = world;
     this.camera = camera;
     this.input = new InputManager();
+    this.velocity = new RAPIER.Vector3(0, 0, 0);
   }
 
   move(deltaTime: number, socket: WebSocket) {
@@ -57,8 +60,8 @@ export class Controller {
 
       const quat = new THREE.Quaternion().setFromUnitVectors(from, to);
 
-      if(quat !== this.player.targetRotation){
-        this.player.updateTargetRotation(quat);
+      if(quat !== this.targetRotation){
+        this.updateTargetRotation(quat);
       }
 
       socket.send(
@@ -69,8 +72,8 @@ export class Controller {
       );
     }
 
-    if(!this.player.targetRotation.equals(this.player.rotation)){
-      this.player.updateRotation();
+    if(!this.targetRotation.equals(this.player.rotation)){
+      this.rotateTowardsTarget();
       socket.send(
           JSON.stringify({
             action: "Player Rotate",
@@ -108,11 +111,20 @@ export class Controller {
     this.camera.position.y = target.y + height;
   
     this.camera.lookAt(target)
-    
-    /*const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle + Math.PI);
-    
-    return rotation;*/
-    
+  }
+
+  rotateTowardsTarget() {
+    this.player.rotation.slerp(this.targetRotation, 0.3);
+
+    if (this.player.rotation.angleTo(this.targetRotation) < 0.001) {
+      this.player.rotation.copy(this.targetRotation);
+    }
+
+    this.player.mesh.quaternion.set(this.player.rotation.x, this.player.rotation.y, this.player.rotation.z, this.player.rotation.w);
+  }
+
+  updateTargetRotation(rotation: THREE.Quaternion) {
+    this.targetRotation = rotation;
   }
 }
 

@@ -22,7 +22,7 @@ socket.onmessage = (event) => {
           let newPlayer = new Player(new RAPIER.Vector3(playerData.position[0], playerData.position[1], playerData.position[2]));
           newPlayer.ID = playerData.ID;
           newPlayer.health = playerData.health;
-          newPlayer.forceUpdateRotation(new THREE.Quaternion(playerData.rotation[0], playerData.rotation[1], playerData.rotation[2], playerData.rotation[3]));
+          newPlayer.updateRotation(new THREE.Quaternion(playerData.rotation[0], playerData.rotation[1], playerData.rotation[2], playerData.rotation[3]));
           game.addPlayer(newPlayer);
           amount++;
       });
@@ -46,7 +46,7 @@ socket.onmessage = (event) => {
 
       //console.log("Player Rot", data.rotation.rotY);
       if (rotatePlayer) {
-        rotatePlayer.forceUpdateRotation(new THREE.Quaternion(data.rotation.rotX, data.rotation.rotY, data.rotation.rotZ, data.rotation.rotW));
+        rotatePlayer.updateRotation(new THREE.Quaternion(data.rotation.rotX, data.rotation.rotY, data.rotation.rotZ, data.rotation.rotW));
       }
       break;
 
