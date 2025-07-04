@@ -52,12 +52,17 @@ export class Controller {
 
       this.player.updatePosition(nextPos);
 
-      if(rotation !== this.player.rotation){
-        this.player.updateRotation(rotation);
+      const from = new THREE.Vector3(0, 0, 1); // forward
+const to = threeDirection.clone().normalize();
+
+      const quat = new THREE.Quaternion().setFromUnitVectors(from, to);
+
+      if(quat !== this.player.rotation){
+        this.player.updateRotation(quat);
         socket.send(
           JSON.stringify({
             action: "Player Rotate",
-            rotation: { x: rotation.x, y: rotation.y, z: rotation.z, w: rotation.w  },
+            rotation: { x: quat.x, y: quat.y, z: quat.z, w: quat.w  },
           })
         )
       }

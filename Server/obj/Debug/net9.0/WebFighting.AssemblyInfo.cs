@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WebFighting")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+263b18ed126fc787953a72e1a7536f667025b974")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1954b18832b8db275ba75bd0216d9918b513f959")]
 [assembly: System.Reflection.AssemblyProductAttribute("WebFighting")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WebFighting")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
