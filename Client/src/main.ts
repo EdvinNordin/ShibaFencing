@@ -54,7 +54,7 @@ async function init() {
 
   function update() {
     //debugRenderer.update();
-    game.controller.move(deltaTime, socket);
+    game.controller.inputUpdate(deltaTime, socket);
     game.world.step();
     game.renderer.render(game.scene, game.camera);
   }

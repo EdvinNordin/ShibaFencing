@@ -2,6 +2,7 @@ import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { game } from "./main";
 import { Player } from "./Player";
+import { range } from "three/tsl";
 
 export class Controller {
   player: Player;
@@ -23,7 +24,7 @@ export class Controller {
     this.velocity = new RAPIER.Vector3(0, 0, 0);
   }
 
-  move(deltaTime: number, socket: WebSocket) {
+  inputUpdate(deltaTime: number, socket: WebSocket) {
     const threeDirection = new THREE.Vector3(0, 0, 0);
     let movement = false;
     if (this.input.isPressed("w")) (threeDirection.z -= 1), (movement = true);
@@ -60,7 +61,7 @@ export class Controller {
 
       const quat = new THREE.Quaternion().setFromUnitVectors(from, to);
 
-      if(quat !== this.targetRotation){
+      if (quat !== this.targetRotation) {
         this.updateTargetRotation(quat);
       }
 
@@ -72,28 +73,58 @@ export class Controller {
       );
     }
 
-    if(!this.targetRotation.equals(this.player.rotation)){
+    if (!this.targetRotation.equals(this.player.rotation)) {
       this.rotateTowardsTarget();
       socket.send(
-          JSON.stringify({
-            action: "Player Rotate",
-            rotation: { x: this.player.rotation.x, y: this.player.rotation.y, z: this.player.rotation.z, w: this.player.rotation.w  },
-          })
-        )
+        JSON.stringify({
+          action: "Player Rotate",
+          rotation: {
+            x: this.player.rotation.x,
+            y: this.player.rotation.y,
+            z: this.player.rotation.z,
+            w: this.player.rotation.w,
+          },
+        })
+      );
     }
+
+    if (this.input.isPressed(" ") && !this.player.isAttacking) {
+      this.attack(socket);
+    }
+  }
+
+  attack(socket: WebSocket) {
+    this.player.isAttacking = true;
+    this.player.weapon.Swing();
+    setTimeout(() => {
+      this.player.isAttacking = false;
+    }, 1000);
+
+    socket.send(
+      JSON.stringify({
+        action: "Player Attack",
+        ID: this.player.ID,
+        range: this.player.weapon.range,
+      })
+    );
   }
 
   // MAGIC LOOK INTO THIS LATER
   updateCameraOrbit(input: InputManager) {
     let rotateBool = false;
     // Adjust angle with input
-    if (input.isPressed("ArrowLeft")) this.camera.userData.orbitAngle += 0.05, rotateBool = true;
-    if (input.isPressed("ArrowRight")) this.camera.userData.orbitAngle -= 0.05, rotateBool = true;
-    if (input.isPressed("j")) this.camera.userData.orbitAngle += 0.05, rotateBool = true;
-    if (input.isPressed("l")) this.camera.userData.orbitAngle -= 0.05, rotateBool = true;
+    if (input.isPressed("ArrowLeft"))
+      (this.camera.userData.orbitAngle += 0.05), (rotateBool = true);
+    if (input.isPressed("ArrowRight"))
+      (this.camera.userData.orbitAngle -= 0.05), (rotateBool = true);
+    if (input.isPressed("j"))
+      (this.camera.userData.orbitAngle += 0.05), (rotateBool = true);
+    if (input.isPressed("l"))
+      (this.camera.userData.orbitAngle -= 0.05), (rotateBool = true);
 
     // Store angle as a property of the camera (or globally)
-    if (this.camera.userData.orbitAngle === undefined) this.camera.userData.orbitAngle = 0;
+    if (this.camera.userData.orbitAngle === undefined)
+      this.camera.userData.orbitAngle = 0;
 
     // Set camera position using polar coordinates
     const radius = 10;
@@ -109,8 +140,8 @@ export class Controller {
     this.camera.position.x = target.x + radius * Math.sin(angle);
     this.camera.position.z = target.z + radius * Math.cos(angle);
     this.camera.position.y = target.y + height;
-  
-    this.camera.lookAt(target)
+
+    this.camera.lookAt(target);
   }
 
   rotateTowardsTarget() {
@@ -120,7 +151,12 @@ export class Controller {
       this.player.rotation.copy(this.targetRotation);
     }
 
-    this.player.mesh.quaternion.set(this.player.rotation.x, this.player.rotation.y, this.player.rotation.z, this.player.rotation.w);
+    this.player.mesh.quaternion.set(
+      this.player.rotation.x,
+      this.player.rotation.y,
+      this.player.rotation.z,
+      this.player.rotation.w
+    );
   }
 
   updateTargetRotation(rotation: THREE.Quaternion) {

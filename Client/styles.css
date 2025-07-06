@@ -102,18 +102,18 @@
 
 #hpContainer {
   background-color: rgb(51, 51, 51);
-  border: 2px solid rgb(37, 37, 37);
-  border-radius: 10px;
+  border: 1px solid rgb(37, 37, 37);
+  border-radius: 3px;
   position: absolute;
   width: 30vw;
-  height: 1vw;
+  height: 2vw;
   top: 1vw;
-  left: 7vw;
+  left: 1vw;
 }
 
 #hp {
-  background-color: rgb(201, 0, 0);
-  border-radius: 10px;
+  background-color: green;
+  border-radius: 3px;
   height: 100%;
 }
 #currentHP {
@@ -124,7 +124,7 @@
   height: 100%;
   text-align: center;
   font-family: Arial, sans-serif;
-  font-size: 0.9vw;
+  font-size: 1.7vw;
   font-weight: bold;
   color: white;
   text-shadow: 1px 1px 1px black;

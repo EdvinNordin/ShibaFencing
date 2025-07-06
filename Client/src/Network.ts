@@ -4,9 +4,9 @@ import { game } from "./main";
 import { Player } from "./Player";
 
 export const socket = new WebSocket(import.meta.env.VITE_BACKEND_URL);
-//export const socket = new WebSocket("https://webfightingbackend-906738005249.europe-north2.run.app");
-//export const socket = new WebSocket("ws://localhost:8181"); // Use this for local development
 
+let health = document.getElementById("hp") as HTMLDivElement;
+let hp = document.getElementById("currentHP");
 // Handle incoming events
 socket.onmessage = (event) => {
   // The server sends JSON, so parse it
@@ -17,14 +17,12 @@ socket.onmessage = (event) => {
       break;
 
     case "Send Old Players":
-      let amount = 0;
       data.players.forEach((playerData: any) => {
-          let newPlayer = new Player(new RAPIER.Vector3(playerData.position[0], playerData.position[1], playerData.position[2]));
-          newPlayer.ID = playerData.ID;
-          newPlayer.health = playerData.health;
-          newPlayer.updateRotation(new THREE.Quaternion(playerData.rotation[0], playerData.rotation[1], playerData.rotation[2], playerData.rotation[3]));
-          game.addPlayer(newPlayer);
-          amount++;
+        let newPlayer = new Player(playerData.position);
+        newPlayer.ID = playerData.ID;
+        newPlayer.health = playerData.health;
+        newPlayer.updateRotation(playerData.rotation);
+        game.addPlayer(newPlayer);
       });
       break;
 
@@ -33,20 +31,73 @@ socket.onmessage = (event) => {
       newPlayer.ID = data.ID;
       game.addPlayer(newPlayer);
       break;
-        
+
     case "Player Move":
       const movePlayer = game.findPlayer(data.ID);
       if (movePlayer) {
-        movePlayer.updatePosition(new RAPIER.Vector3(data.position.posX, data.position.posY, data.position.posZ));
+        movePlayer.updatePosition(data.position);
       }
       break;
 
     case "Player Rotate":
       const rotatePlayer = game.findPlayer(data.ID);
-
-      //console.log("Player Rot", data.rotation.rotY);
       if (rotatePlayer) {
-        rotatePlayer.updateRotation(new THREE.Quaternion(data.rotation.rotX, data.rotation.rotY, data.rotation.rotZ, data.rotation.rotW));
+        rotatePlayer.updateRotation(data.rotation);
+      }
+      break;
+
+    case "Player Attack":
+      const attackingPlayer = game.findPlayer(data.ID);
+      if (attackingPlayer) {
+        attackingPlayer.weapon.Swing(); // Trigger weapon swing animation
+      }
+      break;
+
+    case "Player Hit":
+      game.player.health = data.health;
+      updateHealthBar();
+      if (game.player.health <= 0) {
+        socket.send(
+          JSON.stringify({
+            action: "Player Death",
+          })
+        );
+        game.player.mesh.visible = false; // Hide player mesh if health is 0
+        setTimeout(() => {
+          socket.send(
+            JSON.stringify({
+              action: "Player Respawn",
+            })
+          );
+          game.player.health = 100;
+          updateHealthBar();
+          game.player.updatePosition(new RAPIER.Vector3(0, 0, 0)); // Reset position
+          game.player.updateRotation(new THREE.Quaternion(0, 0, 0, 1)); // Reset rotation
+          game.player.mesh.visible = true;
+        }, 3000); // Respawn after 2 seconds
+      }
+      break;
+
+    case "Player Death":
+      const deadPlayer = game.findPlayer(data.ID);
+      if (deadPlayer) {
+        deadPlayer.mesh.visible = false; // Hide player mesh on death
+        /* setTimeout(() => {
+          deadPlayer.health = 100; // Reset health
+          deadPlayer.updatePosition(new RAPIER.Vector3(0, 0, 0)); // Reset position
+          deadPlayer.updateRotation(new THREE.Quaternion(0, 0, 0, 1)); // Reset rotation
+          deadPlayer.mesh.visible = true; // Show player mesh again
+        }, 3000); // Respawn after 3 seconds*/
+      }
+      break;
+
+    case "Player Respawn":
+      const respawnPlayer = game.findPlayer(data.ID);
+      if (respawnPlayer) {
+        respawnPlayer.health = data.health; // Reset health
+        respawnPlayer.updatePosition(data.position); // Reset position
+        respawnPlayer.updateRotation(data.rotation); // Reset rotation
+        respawnPlayer.mesh.visible = true; // Show player mesh again
       }
       break;
 
@@ -59,14 +110,25 @@ socket.onmessage = (event) => {
   }
 };
 
- socket.onopen = () => {
-    console.log("Opened connection to server");
-  };
+socket.onopen = () => {
+  console.log("Opened connection to server");
+};
 
-  socket.onclose = () => {
-    console.log("Disconnected from server");
-  };
+socket.onclose = () => {
+  console.log("Disconnected from server");
+};
 
-  socket.onerror = (error) => {
-    console.error("WebSocket error:", error);
-  };
+socket.onerror = (error) => {
+  console.error("WebSocket error:", error);
+};
+
+function updateHealthBar() {
+  health.style.width = `${game.player.health}%`;
+  health.style.backgroundColor =
+    game.player.health > 50
+      ? "green"
+      : game.player.health > 20
+      ? "orange"
+      : "red";
+  hp!.innerText = `${game.player.health}%`;
+}
