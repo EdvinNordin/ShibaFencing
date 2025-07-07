@@ -51,7 +51,6 @@ export class Player {
   }
 
   respawn() {
-    //console.log("Respawning player...");
     this.health = 100;
     this.mesh.visible = true; // Show player mesh
     this.updatePosition(new RAPIER.Vector3(0, 0, 0)); // Reset position

@@ -18,7 +18,6 @@ socket.onmessage = (event) => {
 
     case "Send Old Players":
       data.players.forEach((playerData: any) => {
-        console.log("Adding old player:", playerData.ID);
         let newPlayer = new Player();
         newPlayer.ID = playerData.ID;
         newPlayer.health = playerData.health;
@@ -109,15 +108,15 @@ socket.onmessage = (event) => {
 };
 
 socket.onopen = () => {
-  console.log("Opened connection to server");
+  //console.log("Opened connection to server");
 };
 
 socket.onclose = () => {
-  console.log("Disconnected from server");
+  //console.log("Disconnected from server");
 };
 
 socket.onerror = (error) => {
-  console.error("WebSocket error:", error);
+  //console.error("WebSocket error:", error);
 };
 
 function updateHealthBar() {
