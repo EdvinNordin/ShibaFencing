@@ -2,7 +2,6 @@ import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { game } from "./main";
 import { Player } from "./Player";
-import { range } from "three/tsl";
 
 export class Controller {
   player: Player;
@@ -10,7 +9,7 @@ export class Controller {
   camera: THREE.PerspectiveCamera;
   input: InputManager;
   targetRotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
-  velocity: RAPIER.Vector3;
+  cameraTargetPosition: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
 
   constructor(
     player: Player,
@@ -21,10 +20,25 @@ export class Controller {
     this.world = world;
     this.camera = camera;
     this.input = new InputManager();
-    this.velocity = new RAPIER.Vector3(0, 0, 0);
   }
 
   inputUpdate(deltaTime: number, socket: WebSocket) {
+    this.updateCameraOrbit(this.input);
+
+    this.updateCameraPosition(true);
+
+    if (this.player.movable) this.move(socket);
+
+    if (!this.targetRotation.equals(this.player.rotation))
+      this.rotateTowardsTarget(socket);
+
+    if (this.input.isPressed(" ") && !this.player.isAttacking)
+      this.attack(socket);
+
+    this.fallingPossibility(socket);
+  }
+
+  move(socket: WebSocket) {
     const threeDirection = new THREE.Vector3(0, 0, 0);
     let movement = false;
     if (this.input.isPressed("w")) (threeDirection.z -= 1), (movement = true);
@@ -32,13 +46,11 @@ export class Controller {
     if (this.input.isPressed("a")) (threeDirection.x -= 1), (movement = true);
     if (this.input.isPressed("d")) (threeDirection.x += 1), (movement = true);
 
-    this.updateCameraOrbit(this.input);
     if (movement) {
-      threeDirection.normalize();
-      threeDirection.multiplyScalar(this.player.speed * deltaTime);
-
-      threeDirection.applyQuaternion(this.camera.quaternion); // move relative to camera
+      threeDirection.applyQuaternion(this.camera.quaternion);
       threeDirection.y = 0;
+      threeDirection.normalize();
+      threeDirection.multiplyScalar((this.player.speed * 1) / 60);
 
       const direction = new RAPIER.Vector3(
         threeDirection.x,
@@ -51,6 +63,10 @@ export class Controller {
         y: this.player.position.y + direction.y,
         z: this.player.position.z + direction.z,
       };
+
+      let nextPos3 = new THREE.Vector3(nextPos.x, nextPos.y, nextPos.z);
+
+      this.cameraTargetPosition.copy(this.offsetCalc(nextPos3));
 
       game.rigidBody.setNextKinematicTranslation(nextPos);
 
@@ -72,25 +88,6 @@ export class Controller {
         })
       );
     }
-
-    if (!this.targetRotation.equals(this.player.rotation)) {
-      this.rotateTowardsTarget();
-      socket.send(
-        JSON.stringify({
-          action: "Player Rotate",
-          rotation: {
-            x: this.player.rotation.x,
-            y: this.player.rotation.y,
-            z: this.player.rotation.z,
-            w: this.player.rotation.w,
-          },
-        })
-      );
-    }
-
-    if (this.input.isPressed(" ") && !this.player.isAttacking) {
-      this.attack(socket);
-    }
   }
 
   attack(socket: WebSocket) {
@@ -98,7 +95,7 @@ export class Controller {
     this.player.weapon.Swing();
     setTimeout(() => {
       this.player.isAttacking = false;
-    }, 1000);
+    }, 500);
 
     socket.send(
       JSON.stringify({
@@ -109,42 +106,67 @@ export class Controller {
     );
   }
 
-  // MAGIC LOOK INTO THIS LATER
   updateCameraOrbit(input: InputManager) {
     let rotateBool = false;
-    // Adjust angle with input
-    if (input.isPressed("ArrowLeft"))
-      (this.camera.userData.orbitAngle += 0.05), (rotateBool = true);
-    if (input.isPressed("ArrowRight"))
-      (this.camera.userData.orbitAngle -= 0.05), (rotateBool = true);
-    if (input.isPressed("j"))
-      (this.camera.userData.orbitAngle += 0.05), (rotateBool = true);
-    if (input.isPressed("l"))
-      (this.camera.userData.orbitAngle -= 0.05), (rotateBool = true);
+    const rotationSpeed = 0.03;
 
-    // Store angle as a property of the camera (or globally)
+    if (input.isPressed("ArrowLeft") || input.isPressed("j"))
+      (this.camera.userData.orbitAngle += rotationSpeed), (rotateBool = true);
+    if (input.isPressed("ArrowRight") || input.isPressed("l"))
+      (this.camera.userData.orbitAngle -= rotationSpeed), (rotateBool = true);
     if (this.camera.userData.orbitAngle === undefined)
       this.camera.userData.orbitAngle = 0;
 
-    // Set camera position using polar coordinates
-    const radius = 10;
-    const height = 5;
-    const angle = this.camera.userData.orbitAngle;
+    if (rotateBool) this.updateCameraPosition(true);
+  }
 
-    const target = new THREE.Vector3(
+  updateCameraPosition(isLerp: boolean) {
+    // Smoothly interpolate the camera target position
+    const playerPos = new THREE.Vector3(
       this.player.position.x,
       this.player.position.y,
       this.player.position.z
     );
 
-    this.camera.position.x = target.x + radius * Math.sin(angle);
-    this.camera.position.z = target.z + radius * Math.cos(angle);
-    this.camera.position.y = target.y + height;
+    // Update the target position for the camera
+    this.cameraTargetPosition.copy(this.offsetCalc(playerPos));
 
-    this.camera.lookAt(target);
+    // Calculate the camera's position relative to the target position
+    const currentPos = this.camera.position.clone(); // Start from the camera's current position
+
+    if (isLerp) {
+      currentPos.lerp(this.cameraTargetPosition, 0.1);
+    } else {
+      currentPos.copy(this.cameraTargetPosition); // Directly set to target position
+    }
+
+    // Update the camera's position
+    this.camera.position.set(currentPos.x, currentPos.y, currentPos.z);
+
+    const offset = new THREE.Vector3();
+    offset.copy(this.cameraTargetPosition.sub(currentPos));
+    // Ensure the camera is always looking at the target position
+    this.camera.lookAt(
+      this.player.position.x - offset.x,
+      this.player.position.y - offset.y,
+      this.player.position.z - offset.z
+    );
   }
 
-  rotateTowardsTarget() {
+  offsetCalc(vec: THREE.Vector3): THREE.Vector3 {
+    const radius = 10;
+    const height = 5;
+    const angle = this.camera.userData.orbitAngle;
+
+    // Calculate the target position based on the camera's orbit
+    return new THREE.Vector3(
+      vec.x + radius * Math.sin(angle),
+      vec.y + height,
+      vec.z + radius * Math.cos(angle)
+    );
+  }
+
+  rotateTowardsTarget(socket: WebSocket) {
     this.player.rotation.slerp(this.targetRotation, 0.3);
 
     if (this.player.rotation.angleTo(this.targetRotation) < 0.001) {
@@ -157,10 +179,82 @@ export class Controller {
       this.player.rotation.z,
       this.player.rotation.w
     );
+
+    socket.send(
+      JSON.stringify({
+        action: "Player Rotate",
+        rotation: {
+          x: this.player.rotation.x,
+          y: this.player.rotation.y,
+          z: this.player.rotation.z,
+          w: this.player.rotation.w,
+        },
+      })
+    );
   }
 
   updateTargetRotation(rotation: THREE.Quaternion) {
     this.targetRotation = rotation;
+  }
+
+  fallingPossibility(socket: WebSocket) {
+    if (
+      this.player.mesh.position.y > 0 &&
+      socket.readyState === WebSocket.OPEN
+    ) {
+      this.player.mesh.position.y -= 0.5;
+      this.player.movable = false;
+      socket.send(
+        JSON.stringify({
+          action: "Player Move",
+          position: {
+            x: this.player.mesh.position.x,
+            y: this.player.mesh.position.y,
+            z: this.player.mesh.position.z,
+          },
+        })
+      );
+    }
+
+    if (this.player.mesh.position.y === 0) {
+      this.player.movable = true;
+    }
+
+    if (
+      Math.abs(this.player.position.x) > 11 ||
+      Math.abs(this.player.position.z) > 11
+    ) {
+      this.player.movable = false;
+      this.player.mesh.position.y -= 0.5;
+      socket.send(
+        JSON.stringify({
+          action: "Player Move",
+          position: {
+            x: this.player.mesh.position.x,
+            y: this.player.mesh.position.y,
+            z: this.player.mesh.position.z,
+          },
+        })
+      );
+    }
+
+    if (this.player.mesh.position.y < -20) {
+      socket.send(
+        JSON.stringify({
+          action: "Player Death",
+        })
+      );
+      this.player.death();
+
+      setTimeout(() => {
+        socket.send(
+          JSON.stringify({
+            action: "Player Respawn",
+          })
+        );
+        this.player.respawn();
+      }, 3000); // Respawn after 2 seconds
+    }
   }
 }
 

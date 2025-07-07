@@ -51,7 +51,6 @@ export class Game {
   addPlayer(newPlayer: Player) {
     this.players.set(newPlayer.ID, newPlayer);
     this.scene.add(newPlayer.mesh);
-    //this.scene.add(newPlayer.weapon.mesh);
   }
 
   removePlayer(oldPlayer: Player) {

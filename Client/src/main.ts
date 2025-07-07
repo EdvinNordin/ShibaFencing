@@ -11,7 +11,7 @@ async function init() {
   await RAPIER.init();
 
   model = await loadModel();
-  weapon = await loadWeapon()
+  weapon = await loadWeapon();
 
   game = new Game();
 
@@ -35,9 +35,12 @@ async function init() {
   groundMesh.position.set(0, -1.5, 0);
   game.scene.add(groundMesh);
 
-  let groundColliderDesc = RAPIER.ColliderDesc.cuboid(10.0, 0.5, 10.0).setTranslation(0, -1, 0);
+  let groundColliderDesc = RAPIER.ColliderDesc.cuboid(
+    10.0,
+    0.5,
+    10.0
+  ).setTranslation(0, -1, 0);
   game.world.createCollider(groundColliderDesc);
-
 
   const debugRenderer = new RapierDebugRenderer(game.scene, game.world);
 
@@ -47,7 +50,7 @@ async function init() {
     game.camera.updateProjectionMatrix();
     game.renderer.setSize(window.innerWidth, window.innerHeight);
   });
- 
+
   const deltaTime = 1 / 60; // Fixed time step for physics
 
   const { socket } = await import("./Network");
@@ -64,27 +67,34 @@ async function init() {
 init();
 
 class RapierDebugRenderer {
-  mesh
-  world
-  enabled = true
+  mesh;
+  world;
+  enabled = true;
 
   constructor(scene: THREE.Scene, world: RAPIER.World) {
-    this.world = world
-    this.mesh = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xffffff, vertexColors: true }))
-    this.mesh.frustumCulled = false
-    scene.add(this.mesh)
+    this.world = world;
+    this.mesh = new THREE.LineSegments(
+      new THREE.BufferGeometry(),
+      new THREE.LineBasicMaterial({ color: 0xffffff, vertexColors: true })
+    );
+    this.mesh.frustumCulled = false;
+    scene.add(this.mesh);
   }
 
   update() {
     if (this.enabled) {
-      const { vertices, colors } = this.world.debugRender()
-      this.mesh.geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
-      this.mesh.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 4))
-      this.mesh.visible = true
+      const { vertices, colors } = this.world.debugRender();
+      this.mesh.geometry.setAttribute(
+        "position",
+        new THREE.BufferAttribute(vertices, 3)
+      );
+      this.mesh.geometry.setAttribute(
+        "color",
+        new THREE.BufferAttribute(colors, 4)
+      );
+      this.mesh.visible = true;
     } else {
-      this.mesh.visible = false
+      this.mesh.visible = false;
     }
   }
 }
-
-
