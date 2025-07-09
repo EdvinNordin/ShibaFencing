@@ -2,14 +2,22 @@ import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { game } from "./main";
 import { Player } from "./Player";
+import nipplejs from "nipplejs";
 
-export class Controller {
+const joystickZone = document.getElementById("joystickZone");
+const rotateZone = document.getElementById("rotateZone");
+
+export class MobileController {
   player: Player;
   world: RAPIER.World;
   camera: THREE.PerspectiveCamera;
   input: InputManager;
   targetRotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
   cameraTargetPosition: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+  joystick: nipplejs.JoystickManager;
+  joystickCentered: boolean = true;
+  joystickPosition: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+  prevTouchX: number = -1;
 
   constructor(
     player: Player,
@@ -20,12 +28,19 @@ export class Controller {
     this.world = world;
     this.camera = camera;
     this.input = new InputManager();
+    this.joystick = nipplejs.create({
+      zone: joystickZone ?? undefined,
+      mode: "static",
+      position: { left: "50%", top: "50%" },
+      //color: "white",
+      restOpacity: 1,
+    });
   }
 
   updateController(deltaTime: number, socket: WebSocket) {
     this.updateCameraOrbit(this.input);
 
-    this.updateCameraPosition(true);
+    this.updateCameraPosition(false);
 
     if (this.player.movable) this.move(socket);
 
@@ -39,55 +54,61 @@ export class Controller {
   }
 
   move(socket: WebSocket) {
-    const threeDirection = new THREE.Vector3(0, 0, 0);
-    let movement = false;
-    if (this.input.isPressed("w")) (threeDirection.z -= 1), (movement = true);
-    if (this.input.isPressed("s")) (threeDirection.z += 1), (movement = true);
-    if (this.input.isPressed("a")) (threeDirection.x -= 1), (movement = true);
-    if (this.input.isPressed("d")) (threeDirection.x += 1), (movement = true);
+    this.joystick.on("move", (evt, data) => {
+      this.joystickCentered = false;
+      this.joystickPosition.set(data.vector.x, 0, -data.vector.y);
+    });
 
-    if (movement) {
-      threeDirection.applyQuaternion(this.camera.quaternion);
-      threeDirection.y = 0;
-      threeDirection.normalize();
-      threeDirection.multiplyScalar((this.player.speed * 1) / 60);
+    this.joystick.on("end", () => {
+      this.joystickCentered = true;
+      this.joystickPosition.set(0, 0, 0);
+    });
 
-      const direction = new RAPIER.Vector3(
-        threeDirection.x,
-        threeDirection.y,
-        threeDirection.z
-      );
+    if (this.joystickCentered) return; // Do not move if joystick is centered
 
-      const nextPos = {
-        x: this.player.position.x + direction.x,
-        y: this.player.position.y + direction.y,
-        z: this.player.position.z + direction.z,
-      };
+    const threeDirection = this.joystickPosition;
 
-      let nextPos3 = new THREE.Vector3(nextPos.x, nextPos.y, nextPos.z);
+    threeDirection.normalize();
+    threeDirection.applyQuaternion(this.camera.quaternion);
+    threeDirection.y = 0;
+    threeDirection.normalize();
+    threeDirection.multiplyScalar((this.player.speed * 1) / 60);
 
-      this.cameraTargetPosition.copy(this.offsetCalc(nextPos3));
+    const direction = new RAPIER.Vector3(
+      threeDirection.x,
+      threeDirection.y,
+      threeDirection.z
+    );
 
-      game.rigidBody.setNextKinematicTranslation(nextPos);
+    const nextPos = {
+      x: this.player.position.x + direction.x,
+      y: this.player.position.y + direction.y,
+      z: this.player.position.z + direction.z,
+    };
 
-      this.player.updatePosition(nextPos);
+    let nextPos3 = new THREE.Vector3(nextPos.x, nextPos.y, nextPos.z);
 
-      const from = new THREE.Vector3(0, 0, 1); // forward
-      const to = threeDirection.clone().normalize();
+    this.cameraTargetPosition.copy(this.offsetCalc(nextPos3));
 
-      const quat = new THREE.Quaternion().setFromUnitVectors(from, to);
+    game.rigidBody.setNextKinematicTranslation(nextPos);
 
-      if (quat !== this.targetRotation) {
-        this.updateTargetRotation(quat);
-      }
+    this.player.updatePosition(nextPos);
 
-      socket.send(
-        JSON.stringify({
-          action: "Player Move",
-          position: { x: nextPos.x, y: nextPos.y, z: nextPos.z },
-        })
-      );
+    const from = new THREE.Vector3(0, 0, 1); // forward
+    const to = threeDirection.clone().normalize();
+
+    const quat = new THREE.Quaternion().setFromUnitVectors(from, to);
+
+    if (quat !== this.targetRotation) {
+      this.updateTargetRotation(quat);
     }
+
+    socket.send(
+      JSON.stringify({
+        action: "Player Move",
+        position: { x: nextPos.x, y: nextPos.y, z: nextPos.z },
+      })
+    );
   }
 
   attack(socket: WebSocket) {
@@ -108,16 +129,40 @@ export class Controller {
 
   updateCameraOrbit(input: InputManager) {
     let rotateBool = false;
-    const rotationSpeed = 0.03;
+    const rotationSpeed = 0.005;
+    if (rotateZone) {
+      rotateZone.addEventListener("touchstart", (e) => {
+        if (e.touches.length > 0) {
+          const touch = e.touches[0];
+          this.prevTouchX = touch.clientX - window.innerWidth / 2;
+          console.log("Touch started");
+        }
+      });
 
-    if (input.isPressed("ArrowLeft") || input.isPressed("j"))
-      (this.camera.userData.orbitAngle += rotationSpeed), (rotateBool = true);
-    if (input.isPressed("ArrowRight") || input.isPressed("l"))
-      (this.camera.userData.orbitAngle -= rotationSpeed), (rotateBool = true);
+      rotateZone.addEventListener("touchmove", (e) => {
+        if (e.touches.length > 0) {
+          const touch = e.touches[0];
+          const touchDeltaX = touch.clientX - window.innerWidth / 2;
+          rotateBool = true;
+          this.camera.userData.orbitAngle -=
+            (touchDeltaX - this.prevTouchX) * rotationSpeed;
+          this.prevTouchX = touchDeltaX;
+
+          console.log("Touch moved");
+        }
+      });
+
+      rotateZone.addEventListener("touchend", (e) => {
+        this.prevTouchX = -1;
+
+        console.log("Touch ended");
+      });
+    }
+
     if (this.camera.userData.orbitAngle === undefined)
       this.camera.userData.orbitAngle = 0;
 
-    if (rotateBool) this.updateCameraPosition(true);
+    if (rotateBool) this.updateCameraPosition(false);
   }
 
   updateCameraPosition(isLerp: boolean) {

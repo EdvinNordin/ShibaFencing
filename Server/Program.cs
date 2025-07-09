@@ -270,3 +270,5 @@ class PlayerState
     }
 
 }
+
+//gcloud run deploy webfightingbackend --source=Server --region=europe-north2 --allow-unauthenticated

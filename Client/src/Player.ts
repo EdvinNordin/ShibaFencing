@@ -2,8 +2,10 @@ import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Weapon } from "./Weapon";
 import { model } from "./main";
+import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
 
 export class Player {
+  name: string = "Player";
   mesh: THREE.Object3D;
   position: RAPIER.Vector3 = new RAPIER.Vector3(0, 0, 0);
   rotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);

@@ -2,6 +2,8 @@ import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Player } from "./Player";
 import { Controller } from "./Controller";
+import { MobileController } from "./Mobile";
+import { isMobile } from "./main";
 
 export class Game {
   scene: THREE.Scene;
@@ -45,7 +47,15 @@ export class Game {
     this.rigidBody = this.world.createRigidBody(rbDesc);
     this.rigidBody.setNextKinematicTranslation(new RAPIER.Vector3(0, 0, 0));
 
-    this.controller = new Controller(this.player, this.world, this.camera);
+    if (isMobile) {
+      this.controller = new MobileController(
+        this.player,
+        this.world,
+        this.camera
+      );
+    } else {
+      this.controller = new Controller(this.player, this.world, this.camera);
+    }
   }
 
   addPlayer(newPlayer: Player) {

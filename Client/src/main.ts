@@ -7,6 +7,8 @@ export let game: Game;
 export let weapon: THREE.Object3D;
 export let model: THREE.Object3D;
 
+export const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
 async function init() {
   await RAPIER.init();
 
@@ -51,13 +53,13 @@ async function init() {
     game.renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  const deltaTime = 1 / 60; // Fixed time step for physics
-
   const { socket } = await import("./Network");
-
+  let clock = new THREE.Clock();
+  let deltaTime = 0;
   function update() {
+    deltaTime = clock.getDelta();
     //debugRenderer.update();
-    game.controller.inputUpdate(deltaTime, socket);
+    game.controller.updateController(deltaTime, socket);
     game.world.step();
     game.renderer.render(game.scene, game.camera);
   }

@@ -23,17 +23,27 @@
   z-index: 100;
 }
 
-#right {
+#rotateZone {
   position: absolute;
-  right: 0;
-  top: 0;
-  height: 100%;
-  width: 100%;
+  height: 100vh;
+  width: 100vw;
 }
 
-#joystick {
-  display: none;
+#joystickZone {
   z-index: 100;
+  position: absolute;
+  bottom: 10%;
+  left: 5%;
+  width: 100px;
+  height: 100px;
+}
+
+.front {
+  opacity: 1 !important;
+}
+
+.back {
+  border: 1px solid rgb(37, 37, 37) !important;
 }
 
 #jumpButton {
