@@ -36,6 +36,7 @@ export class MobileController {
       //color: "white",
       restOpacity: 1,
     });
+    swingButton?.style.setProperty("display", "block");
   }
 
   updateController(deltaTime: number, socket: WebSocket) {
