@@ -14,14 +14,15 @@ export class Player {
   ID: string;
   weapon: Weapon;
   isAttacking: boolean = false;
-  movable: boolean = true; // Flag to control movement
+  movable: boolean = false; // Flag to control movement
+  alive: boolean = true; // Flag to check if player is alive
 
   constructor() {
     this.ID = crypto.randomUUID();
 
     this.mesh = model.clone();
 
-    this.mesh.position.set(this.position.x, 5, this.position.z);
+    this.mesh.position.set(this.position.x, 10, this.position.z);
 
     this.weapon = new Weapon();
     this.mesh.add(this.weapon.mesh);
@@ -44,21 +45,23 @@ export class Player {
   }
 
   death() {
+    this.alive = false; // Set alive flag to false
     this.health = 0;
     this.mesh.visible = false; // Hide player mesh if health is 0
     this.movable = false; // Disable movement
-    this.mesh.position.y = 0; // Reset height
     this.updatePosition(new RAPIER.Vector3(0, 0, 0));
+    this.updateRotation(new THREE.Quaternion(0, 0, 0, 1)); // Reset rotation
+    this.mesh.position.y = -20; // Reset height
     this.updateHealthBar();
   }
 
   respawn() {
+    this.alive = true;
     this.health = 100;
     this.mesh.visible = true; // Show player mesh
     this.updatePosition(new RAPIER.Vector3(0, 0, 0)); // Reset position
     this.updateRotation(new THREE.Quaternion(0, 0, 0, 1)); // Reset rotation
-    this.mesh.position.y = 5; // Reset height
-    this.movable = true; // Allow movement again
+    this.mesh.position.y = 10; // Reset height
     this.updateHealthBar(); // Update health bar
   }
 

@@ -250,11 +250,12 @@ export class Controller {
           })
         );
         this.player.respawn();
-      }, 3000); // Respawn after 2 seconds
+      }, 3000);
     } else if (
       Math.abs(this.player.position.x) > 11 ||
       Math.abs(this.player.position.z) > 11
     ) {
+      this.player.alive;
       this.player.movable = false;
       this.player.mesh.position.y -= fallSpeed;
       socket.send(
@@ -267,7 +268,7 @@ export class Controller {
           },
         })
       );
-    } else if (this.player.mesh.position.y < 0.1) {
+    } else if (this.player.mesh.position.y < 0.1 && this.player.health > 0) {
       this.player.mesh.position.y = 0; // Reset height to 0 if close enough
       this.player.movable = true;
     }

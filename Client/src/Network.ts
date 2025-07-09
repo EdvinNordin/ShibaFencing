@@ -74,7 +74,7 @@ socket.onmessage = (event) => {
           updateHealthBar();
           game.player.updatePosition(new RAPIER.Vector3(0, 0, 0)); // Reset position
           game.player.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
-          game.player.mesh.position.y = 5; // Reset height
+          game.player.mesh.position.y = 10; // Reset height
           game.player.mesh.visible = true;
         }, 3000); // Respawn after 2 seconds
       }
@@ -93,7 +93,7 @@ socket.onmessage = (event) => {
         respawnPlayer.health = data.health; // Reset health
         respawnPlayer.updatePosition(data.position); // Reset position
         respawnPlayer.updateRotation(data.rotation); // Reset rotation
-        respawnPlayer.mesh.position.y = 5; // Reset height
+        respawnPlayer.mesh.position.y = 10; // Reset height
         respawnPlayer.mesh.visible = true; // Show player mesh again
       }
       break;
