@@ -7,7 +7,7 @@ import nipplejs from "nipplejs";
 const joystickZone = document.getElementById("joystickZone");
 const rotateZone = document.getElementById("rotateZone");
 const swingButton = document.getElementById("swingButton");
-let attack = false;
+let attackReady = false;
 
 export class MobileController {
   player: Player;
@@ -34,7 +34,6 @@ export class MobileController {
       zone: joystickZone ?? undefined,
       mode: "static",
       position: { left: "50%", top: "50%" },
-      //color: "white",
       restOpacity: 1,
     });
     swingButton?.style.setProperty("display", "block");
@@ -68,12 +67,13 @@ export class MobileController {
         if (this.player.isAttacking) return;
         this.player.isAttacking = true;
         this.player.weapon.Swing();
-        attack = true;
+        attackReady = true;
         setTimeout(() => {
           this.player.isAttacking = false;
         }, 500);
       });
     }
+    attackReady = false;
   }
 
   updateController(deltaTime: number, socket: WebSocket) {
@@ -86,7 +86,7 @@ export class MobileController {
     if (!this.targetRotation.equals(this.player.rotation))
       this.rotateTowardsTarget(socket, deltaTime);
 
-    if (!this.player.isAttacking && !attack) this.attack(socket, deltaTime);
+    if (!this.player.isAttacking && attackReady) this.attack(socket, deltaTime);
 
     this.fallingPossibility(socket, deltaTime);
   }
@@ -177,6 +177,7 @@ export class MobileController {
 
   attack(socket: WebSocket, deltaTime: number) {
     if (socket.readyState === WebSocket.OPEN) {
+      attackReady = false; // Reset attack readiness
       socket.send(
         JSON.stringify({
           action: "Player Attack",
@@ -185,7 +186,6 @@ export class MobileController {
         })
       );
     }
-    attack = false;
   }
 
   updateCameraOrbit(input: InputManager, deltaTime: number) {
