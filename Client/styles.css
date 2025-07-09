@@ -3,26 +3,6 @@
   margin: 0;
 }
 
-#instructions {
-  display: none;
-  position: absolute;
-  background-color: rgba(0, 0, 0, 0.5);
-  width: 100%;
-  height: 100%;
-
-  font-family: Georgia;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-
-  text-align: center;
-  font-size: 14px;
-  cursor: pointer;
-  color: white;
-  z-index: 100;
-}
-
 #rotateZone {
   position: absolute;
   height: 100vh;
@@ -46,68 +26,23 @@
   border: 1px solid rgb(37, 37, 37) !important;
 }
 
-#jumpButton {
+#swingButton {
   position: absolute;
-  top: 50%;
-  left: 85%;
-  height: 100px;
-  width: 100px;
+  bottom: 10%;
+  right: 5%;
+  height: 75px;
+  width: 75px;
   border-radius: 100%;
-  border: 3px solid black;
-  background-color: rgba(255, 255, 255, 0.3);
-  z-index: 100;
-
-  /* Centering text with Flexbox */
-  display: flex;
-  justify-content: center;
-  /* Center horizontally */
-  align-items: center;
-  /* Center vertically */
-
-  /* Optional text styling for better appearance */
-  text-align: center;
-  font-size: 180%;
-  font-weight: bold;
-  color: White;
-}
-
-#jumpIMG {
-  display: none;
-  height: 60%;
-  width: 60%;
-  transform: scaleX(-1);
-}
-
-#fullscreenButton {
-  display: none;
-  position: absolute;
-  top: 90%;
-  left: 92%;
-  height: 10%;
-  width: 10%;
+  border: 1px solid rgb(37, 37, 37) !important;
+  background-color: white;
   z-index: 100;
 }
-
-#fullscreenIMG {
-  height: 100%;
-  width: 100%;
-}
-
-#cooldownTimer {
+#swingButton img {
+  width: 50%;
+  height: 50%;
   position: absolute;
-  width: 5vw;
-  height: 5vw;
-  border-radius: 50%;
-  background: conic-gradient(rgb(255, 255, 255) 0deg, rgb(255, 255, 255) 0deg);
-  border: 1px solid rgb(184, 184, 184);
-  top: 1vw;
-  left: 1vw;
-}
-#roll {
-  margin-left: 15%;
-  margin-top: 15%;
-  width: 70%;
-  height: 70%;
+  top: 25%;
+  left: 25%;
 }
 
 #hpContainer {
@@ -136,37 +71,4 @@
   font-size: 1vw;
   color: white;
   text-shadow: 1px 1px 2px black;
-}
-#midDot {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 10px;
-  height: 10px;
-  background-color: white;
-  border-radius: 100%;
-}
-
-#deadIMG {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  z-index: 50;
-}
-
-#music {
-  position: absolute;
-  bottom: 0.5vw;
-  right: 3vw;
-  z-index: 1001;
-  font-size: 2vw;
-  cursor: pointer;
-}
-#sound {
-  position: absolute;
-  bottom: 0.5vw;
-  right: 0.5vw;
-  z-index: 1001;
-  font-size: 2vw;
-  cursor: pointer;
 }

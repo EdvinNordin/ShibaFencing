@@ -6,6 +6,7 @@ import nipplejs from "nipplejs";
 
 const joystickZone = document.getElementById("joystickZone");
 const rotateZone = document.getElementById("rotateZone");
+const swingButton = document.getElementById("swingButton");
 
 export class MobileController {
   player: Player;
@@ -40,15 +41,14 @@ export class MobileController {
   updateController(deltaTime: number, socket: WebSocket) {
     this.updateCameraOrbit(this.input);
 
-    this.updateCameraPosition(false);
+    this.updateCameraPosition(true);
 
     if (this.player.movable) this.move(socket);
 
     if (!this.targetRotation.equals(this.player.rotation))
       this.rotateTowardsTarget(socket);
 
-    if (this.input.isPressed(" ") && !this.player.isAttacking)
-      this.attack(socket);
+    if (!this.player.isAttacking) this.attack(socket);
 
     this.fallingPossibility(socket);
   }
@@ -112,19 +112,24 @@ export class MobileController {
   }
 
   attack(socket: WebSocket) {
-    this.player.isAttacking = true;
-    this.player.weapon.Swing();
-    setTimeout(() => {
-      this.player.isAttacking = false;
-    }, 500);
+    if (swingButton) {
+      swingButton.addEventListener("touchstart", (e) => {
+        if (this.player.isAttacking) return;
+        this.player.isAttacking = true;
+        this.player.weapon.Swing();
+        setTimeout(() => {
+          this.player.isAttacking = false;
+        }, 500);
 
-    socket.send(
-      JSON.stringify({
-        action: "Player Attack",
-        ID: this.player.ID,
-        range: this.player.weapon.range,
-      })
-    );
+        socket.send(
+          JSON.stringify({
+            action: "Player Attack",
+            ID: this.player.ID,
+            range: this.player.weapon.range,
+          })
+        );
+      });
+    }
   }
 
   updateCameraOrbit(input: InputManager) {
@@ -135,7 +140,6 @@ export class MobileController {
         if (e.touches.length > 0) {
           const touch = e.touches[0];
           this.prevTouchX = touch.clientX - window.innerWidth / 2;
-          console.log("Touch started");
         }
       });
 
@@ -147,22 +151,18 @@ export class MobileController {
           this.camera.userData.orbitAngle -=
             (touchDeltaX - this.prevTouchX) * rotationSpeed;
           this.prevTouchX = touchDeltaX;
-
-          console.log("Touch moved");
         }
       });
 
       rotateZone.addEventListener("touchend", (e) => {
         this.prevTouchX = -1;
-
-        console.log("Touch ended");
       });
     }
 
     if (this.camera.userData.orbitAngle === undefined)
       this.camera.userData.orbitAngle = 0;
 
-    if (rotateBool) this.updateCameraPosition(false);
+    if (rotateBool) this.updateCameraPosition(true);
   }
 
   updateCameraPosition(isLerp: boolean) {
