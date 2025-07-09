@@ -9,9 +9,6 @@ const rotateZone = document.getElementById("rotateZone");
 const swingButton = document.getElementById("swingButton");
 let attack = false;
 
-let joystickTouchId: number | null = null;
-let rotateTouchId: number | null = null;
-
 export class MobileController {
   player: Player;
   world: RAPIER.World;
@@ -44,32 +41,25 @@ export class MobileController {
 
     if (rotateZone) {
       rotateZone.addEventListener("touchstart", (e) => {
-        for (const touch of e.touches) {
-          if (rotateTouchId === null) {
-            rotateTouchId = touch.identifier; // Assign this touch to camera rotation
-            this.prevTouchX = touch.clientX - window.innerWidth / 2;
-          }
+        if (e.touches.length > 0) {
+          const touch = e.touches[0];
+          this.prevTouchX = touch.clientX - window.innerWidth / 2;
         }
       });
 
       rotateZone.addEventListener("touchmove", (e) => {
-        for (const touch of e.touches) {
-          if (touch.identifier === rotateTouchId && this.prevTouchX !== -1) {
-            const touchDeltaX = touch.clientX - window.innerWidth / 2;
-            this.camera.userData.orbitAngle -=
-              (touchDeltaX - this.prevTouchX) * 0.005;
-            this.prevTouchX = touchDeltaX;
-          }
+        if (e.touches.length > 0 && this.prevTouchX !== -1) {
+          const touch = e.touches[0];
+          const touchDeltaX = touch.clientX - window.innerWidth / 2;
+
+          this.camera.userData.orbitAngle -=
+            (touchDeltaX - this.prevTouchX) * 0.005;
+          this.prevTouchX = touchDeltaX;
         }
       });
 
       rotateZone.addEventListener("touchend", (e) => {
-        for (const touch of e.changedTouches) {
-          if (touch.identifier === rotateTouchId) {
-            rotateTouchId = null; // Release the touch for camera rotation
-            this.prevTouchX = -1;
-          }
-        }
+        this.prevTouchX = -1;
       });
     }
 
@@ -82,37 +72,6 @@ export class MobileController {
         setTimeout(() => {
           this.player.isAttacking = false;
         }, 500);
-      });
-    }
-
-    if (joystickZone) {
-      joystickZone.addEventListener("touchstart", (e) => {
-        // No need to handle joystick position here, as nipplejs events will handle it
-        for (const touch of e.touches) {
-          if (joystickTouchId === null) {
-            joystickTouchId = touch.identifier; // Assign this touch to joystick
-          }
-        }
-      });
-
-      joystickZone.addEventListener("touchmove", (e) => {
-        // No need to handle joystick position here, as nipplejs events will handle it
-        for (const touch of e.touches) {
-          if (touch.identifier === joystickTouchId) {
-            // Joystick position is handled by nipplejs events
-            this.joystickCentered = false;
-          }
-        }
-      });
-
-      joystickZone.addEventListener("touchend", (e) => {
-        for (const touch of e.changedTouches) {
-          if (touch.identifier === joystickTouchId) {
-            joystickTouchId = null; // Release the touch for joystick
-            this.joystickCentered = true;
-            this.joystickPosition.set(0, 0, 0);
-          }
-        }
       });
     }
   }
