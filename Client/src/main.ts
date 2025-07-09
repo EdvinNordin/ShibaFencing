@@ -58,6 +58,7 @@ async function init() {
   let deltaTime = 0;
   function update() {
     deltaTime = clock.getDelta();
+    deltaTime = Math.min(deltaTime, 0.1);
     //debugRenderer.update();
     game.controller.updateController(deltaTime, socket);
     game.world.step();

@@ -10,7 +10,7 @@ export class Player {
   position: RAPIER.Vector3 = new RAPIER.Vector3(0, 0, 0);
   rotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
   health: number = 100;
-  speed: number = 10;
+  speed: number = 7;
   ID: string;
   weapon: Weapon;
   isAttacking: boolean = false;

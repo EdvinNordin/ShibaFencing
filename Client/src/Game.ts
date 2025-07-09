@@ -11,7 +11,7 @@ export class Game {
   camera: THREE.PerspectiveCamera;
   renderer: THREE.WebGLRenderer;
   players: Map<string, Player>;
-  controller: Controller;
+  controller: Controller | MobileController;
   player: Player;
   rigidBody: RAPIER.RigidBody;
 
