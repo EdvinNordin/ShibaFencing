@@ -7,6 +7,7 @@ import nipplejs from "nipplejs";
 const joystickZone = document.getElementById("joystickZone");
 const rotateZone = document.getElementById("rotateZone");
 const swingButton = document.getElementById("swingButton");
+let attack = false;
 
 export class MobileController {
   player: Player;
@@ -37,6 +38,42 @@ export class MobileController {
       restOpacity: 1,
     });
     swingButton?.style.setProperty("display", "block");
+
+    if (rotateZone) {
+      rotateZone.addEventListener("touchstart", (e) => {
+        if (e.touches.length > 0) {
+          const touch = e.touches[0];
+          this.prevTouchX = touch.clientX - window.innerWidth / 2;
+        }
+      });
+
+      rotateZone.addEventListener("touchmove", (e) => {
+        if (e.touches.length > 0 && this.prevTouchX !== -1) {
+          const touch = e.touches[0];
+          const touchDeltaX = touch.clientX - window.innerWidth / 2;
+
+          this.camera.userData.orbitAngle -=
+            (touchDeltaX - this.prevTouchX) * 0.005;
+          this.prevTouchX = touchDeltaX;
+        }
+      });
+
+      rotateZone.addEventListener("touchend", (e) => {
+        this.prevTouchX = -1;
+      });
+    }
+
+    if (swingButton) {
+      swingButton.addEventListener("touchstart", (e) => {
+        if (this.player.isAttacking) return;
+        this.player.isAttacking = true;
+        this.player.weapon.Swing();
+        attack = true;
+        setTimeout(() => {
+          this.player.isAttacking = false;
+        }, 500);
+      });
+    }
   }
 
   updateController(deltaTime: number, socket: WebSocket) {
@@ -49,7 +86,7 @@ export class MobileController {
     if (!this.targetRotation.equals(this.player.rotation))
       this.rotateTowardsTarget(socket, deltaTime);
 
-    if (!this.player.isAttacking) this.attack(socket, deltaTime);
+    if (!this.player.isAttacking && !attack) this.attack(socket, deltaTime);
 
     this.fallingPossibility(socket, deltaTime);
   }
@@ -68,13 +105,16 @@ export class MobileController {
     if (this.joystickCentered) return; // Do not move if joystick is centered
 
     const threeDirection = this.joystickPosition;
+    const yawQuaternion = new THREE.Quaternion();
+    yawQuaternion.setFromAxisAngle(
+      new THREE.Vector3(0, 1, 0),
+      this.camera.rotation.y
+    );
+    threeDirection.applyQuaternion(yawQuaternion);
 
-    threeDirection.normalize();
-    threeDirection.applyQuaternion(this.camera.quaternion);
     threeDirection.y = 0;
     threeDirection.normalize();
     threeDirection.multiplyScalar(this.player.speed * deltaTime);
-
     const direction = new RAPIER.Vector3(
       threeDirection.x,
       threeDirection.y,
@@ -100,7 +140,7 @@ export class MobileController {
 
     const quat = new THREE.Quaternion().setFromUnitVectors(from, to);
 
-    if (quat !== this.targetRotation) {
+    if (quat.angleTo(this.targetRotation) > 0.001) {
       this.updateTargetRotation(quat);
     }
 
@@ -113,52 +153,21 @@ export class MobileController {
   }
 
   attack(socket: WebSocket, deltaTime: number) {
-    if (swingButton) {
-      swingButton.addEventListener("touchstart", (e) => {
-        if (this.player.isAttacking) return;
-        this.player.isAttacking = true;
-        this.player.weapon.Swing();
-        setTimeout(() => {
-          this.player.isAttacking = false;
-        }, 500);
-
-        socket.send(
-          JSON.stringify({
-            action: "Player Attack",
-            ID: this.player.ID,
-            range: this.player.weapon.range,
-          })
-        );
-      });
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(
+        JSON.stringify({
+          action: "Player Attack",
+          ID: this.player.ID,
+          range: this.player.weapon.range,
+        })
+      );
     }
+    attack = false;
   }
 
   updateCameraOrbit(input: InputManager, deltaTime: number) {
     let rotateBool = false;
-    const rotationSpeed = deltaTime;
-    if (rotateZone) {
-      rotateZone.addEventListener("touchstart", (e) => {
-        if (e.touches.length > 0) {
-          const touch = e.touches[0];
-          this.prevTouchX = touch.clientX - window.innerWidth / 2;
-        }
-      });
-
-      rotateZone.addEventListener("touchmove", (e) => {
-        if (e.touches.length > 0) {
-          const touch = e.touches[0];
-          const touchDeltaX = touch.clientX - window.innerWidth / 2;
-          rotateBool = true;
-          this.camera.userData.orbitAngle -=
-            (touchDeltaX - this.prevTouchX) * rotationSpeed;
-          this.prevTouchX = touchDeltaX;
-        }
-      });
-
-      rotateZone.addEventListener("touchend", (e) => {
-        this.prevTouchX = -1;
-      });
-    }
+    const rotationSpeed = 10 * deltaTime;
 
     if (this.camera.userData.orbitAngle === undefined)
       this.camera.userData.orbitAngle = 0;
