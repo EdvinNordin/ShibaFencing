@@ -7,6 +7,8 @@ import nipplejs from "nipplejs";
 const joystickZone = document.getElementById("joystickZone");
 const rotateZone = document.getElementById("rotateZone");
 const swingButton = document.getElementById("swingButton");
+let movementTouchId: number | null = null;
+let rotationTouchId: string | null = null;
 
 export class MobileController {
   player: Player;
@@ -54,7 +56,10 @@ export class MobileController {
   }
 
   move(socket: WebSocket) {
-    this.joystick.on("move", (evt, data) => {
+    this.joystick.on("start", (e, data) => {
+      movementTouchId = e.target.id;
+    });
+    this.joystick.on("move", (e, data) => {
       this.joystickCentered = false;
       this.joystickPosition.set(data.vector.x, 0, -data.vector.y);
     });
@@ -62,6 +67,7 @@ export class MobileController {
     this.joystick.on("end", () => {
       this.joystickCentered = true;
       this.joystickPosition.set(0, 0, 0);
+      movementTouchId = null;
     });
 
     if (this.joystickCentered) return; // Do not move if joystick is centered
@@ -137,9 +143,12 @@ export class MobileController {
     const rotationSpeed = 0.005;
     if (rotateZone) {
       rotateZone.addEventListener("touchstart", (e) => {
-        if (e.touches.length > 0) {
-          const touch = e.touches[0];
-          this.prevTouchX = touch.clientX - window.innerWidth / 2;
+        for (let touch of e.touches) {
+          if (touch.identifier !== movementTouchId) {
+            if (e.touches.length > 0) {
+              this.prevTouchX = touch.clientX - window.innerWidth / 2;
+            }
+          }
         }
       });
 
