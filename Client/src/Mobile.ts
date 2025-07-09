@@ -104,46 +104,69 @@ export class MobileController {
 
     if (this.joystickCentered) return; // Do not move if joystick is centered
 
-    const threeDirection = this.joystickPosition;
-    const yawQuaternion = new THREE.Quaternion();
-    yawQuaternion.setFromAxisAngle(
-      new THREE.Vector3(0, 1, 0),
-      this.camera.rotation.y
-    );
-    threeDirection.applyQuaternion(yawQuaternion);
+    // Clone the joystick position to avoid modifying the original vector
+    const threeDirection = this.joystickPosition.clone();
 
+    // Extract the yaw rotation from the camera's quaternion
+    const cameraQuaternion = this.camera.quaternion.clone();
+    const cameraYawQuaternion = new THREE.Quaternion();
+    const upVector = new THREE.Vector3(0, 1, 0); // Y-axis
+
+    // Project the camera's forward vector onto the horizontal plane
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(
+      cameraQuaternion
+    );
+    forward.y = 0; // Flatten to horizontal plane
+    forward.normalize();
+
+    // Create a quaternion that represents the yaw rotation
+    cameraYawQuaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 0, -1),
+      forward
+    );
+
+    // Apply only the yaw rotation to the movement direction
+    threeDirection.applyQuaternion(cameraYawQuaternion);
+
+    // Ensure movement remains on the horizontal plane
     threeDirection.y = 0;
+
+    // Normalize and scale the movement vector
     threeDirection.normalize();
     threeDirection.multiplyScalar(this.player.speed * deltaTime);
+
+    // Convert the movement vector to RAPIER's format
     const direction = new RAPIER.Vector3(
       threeDirection.x,
       threeDirection.y,
       threeDirection.z
     );
 
+    // Calculate the next position
     const nextPos = {
       x: this.player.position.x + direction.x,
       y: this.player.position.y + direction.y,
       z: this.player.position.z + direction.z,
     };
 
-    let nextPos3 = new THREE.Vector3(nextPos.x, nextPos.y, nextPos.z);
-
+    // Update the camera target position
+    const nextPos3 = new THREE.Vector3(nextPos.x, nextPos.y, nextPos.z);
     this.cameraTargetPosition.copy(this.offsetCalc(nextPos3));
 
+    // Update the player's position
     game.rigidBody.setNextKinematicTranslation(nextPos);
-
     this.player.updatePosition(nextPos);
 
-    const from = new THREE.Vector3(0, 0, 1); // forward
+    // Update the player's rotation to face the movement direction
+    const from = new THREE.Vector3(0, 0, 1); // Forward vector
     const to = threeDirection.clone().normalize();
-
     const quat = new THREE.Quaternion().setFromUnitVectors(from, to);
 
     if (quat.angleTo(this.targetRotation) > 0.001) {
       this.updateTargetRotation(quat);
     }
 
+    // Send the updated position to the server
     socket.send(
       JSON.stringify({
         action: "Player Move",
