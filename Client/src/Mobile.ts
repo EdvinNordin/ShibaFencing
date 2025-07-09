@@ -72,7 +72,7 @@ export class MobileController {
     threeDirection.applyQuaternion(this.camera.quaternion);
     threeDirection.y = 0;
     threeDirection.normalize();
-    threeDirection.multiplyScalar((this.player.speed * 0.1) / 60);
+    threeDirection.multiplyScalar((this.player.speed * 0.5) / 60);
 
     const direction = new RAPIER.Vector3(
       threeDirection.x,
