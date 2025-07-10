@@ -12,14 +12,18 @@ Dictionary<Guid, (IWebSocketConnection connection, PlayerState state)> Players =
 
 websocketServer.Start(connection =>
 {
+    Guid socketID = Guid.Empty;
+    PlayerState socketPlayer = null;
     // new player connects
     connection.OnOpen = () =>
         {
+
+            socketID = connection.ConnectionInfo.Id;
             // Set the ID for the new player
             var setID = new
             {
                 action = "Set ID",
-                ID = connection.ConnectionInfo.Id
+                ID = socketID
             };
             connection.Send(JsonSerializer.Serialize(setID));
 
@@ -44,19 +48,21 @@ websocketServer.Start(connection =>
                 var newPlayer = new
                 {
                     action = "New Player",
-                    ID = connection.ConnectionInfo.Id
+                    ID = socketID
                 };
 
                 foreach (var player in Players)
                 {
-                    if (player.Key != connection.ConnectionInfo.Id)
+                    if (player.Key != socketID)
                     {
                         player.Value.connection.Send(JsonSerializer.Serialize(newPlayer));
                     }
                 }
             }
 
-            Players.Add(connection.ConnectionInfo.Id, (connection, new PlayerState()));
+            Players.Add(socketID, (connection, new PlayerState()));
+            
+            socketPlayer = Players[socketID].state;
         };
 
     // player disconnects
@@ -66,10 +72,10 @@ websocketServer.Start(connection =>
             var disconnectMsg = new
             {
                 action = "Remove Player",
-                ID = connection.ConnectionInfo.Id
+                ID = socketID
             };
 
-            Players.Remove(connection.ConnectionInfo.Id);
+            Players.Remove(socketID);
 
             foreach (var player in Players)
             {
@@ -95,18 +101,18 @@ websocketServer.Start(connection =>
                     var posY = position.GetProperty("y").GetSingle();
                     var posZ = position.GetProperty("z").GetSingle();
 
-                    Players[connection.ConnectionInfo.Id].state.setPosition(posX, posY, posZ);
+                    socketPlayer.setPosition(posX, posY, posZ);
 
                     var playerMove = new
                     {
                         action = "Player Move",
-                        position = PlayerState.SerializeVector3(Players[connection.ConnectionInfo.Id].state.position),
-                        ID = connection.ConnectionInfo.Id
+                        position = PlayerState.SerializeVector3(socketPlayer.position),
+                        ID = socketID
                     };
 
                     foreach (var player in Players)
                     {
-                        if (player.Key != connection.ConnectionInfo.Id) player.Value.connection.Send(JsonSerializer.Serialize(playerMove));
+                        if (player.Key != socketID) player.Value.connection.Send(JsonSerializer.Serialize(playerMove));
                     }
                     break;
 
@@ -117,47 +123,50 @@ websocketServer.Start(connection =>
                     var rotZ = rotation.GetProperty("z").GetSingle();
                     var rotW = rotation.GetProperty("w").GetSingle();
 
-                    Players[connection.ConnectionInfo.Id].state.setRotation(rotX, rotY, rotZ, rotW);
+                    socketPlayer.setRotation(rotX, rotY, rotZ, rotW);
                     //Console.WriteLine("Player Rot: " + rotX + ", " + rotY + ", " + rotZ + ", " + rotW);
                     var playerRotate = new
                     {
                         action = "Player Rotate",
-                        rotation = PlayerState.SerializeQuaternion(Players[connection.ConnectionInfo.Id].state.rotation),
-                        ID = connection.ConnectionInfo.Id
+                        rotation = PlayerState.SerializeQuaternion(socketPlayer.rotation),
+                        ID = socketID
                     };
 
                     foreach (var player in Players)
                     {
-                        if (player.Key != connection.ConnectionInfo.Id) player.Value.connection.Send(JsonSerializer.Serialize(playerRotate));
+                        if (player.Key != socketID) player.Value.connection.Send(JsonSerializer.Serialize(playerRotate));
                     }
                     break;
 
                 case "Player Attack":
                     //var ID = doc.RootElement.GetProperty("ID");
-                    Players[connection.ConnectionInfo.Id].state.isAttacking = true;
-                    foreach (var player in Players)
+                    //socketPlayer.isAttacking = true;
+                    foreach (var hitPlayer in Players)
                     {
-                        if (player.Key != connection.ConnectionInfo.Id)
+                        if (hitPlayer.Key != socketID)
                         {
                             var playerAttack = new
                             {
                                 action = "Player Attack",
-                                ID = connection.ConnectionInfo.Id
+                                ID = socketID
                             };
-                            player.Value.connection.Send(JsonSerializer.Serialize(playerAttack));
+                            hitPlayer.Value.connection.Send(JsonSerializer.Serialize(playerAttack));
 
                             var range = doc.RootElement.GetProperty("range").GetSingle();
-                            if (Players[connection.ConnectionInfo.Id].state.attack(player.Value.state, range))
+                            if (socketPlayer.attack(hitPlayer.Value.state, range))
                             {
+                       
+                                hitPlayer.Value.state.health -= hitPlayer.Value.state.damage; // Example damage
+                                if (hitPlayer.Value.state.health < 0) hitPlayer.Value.state.health = 0; // Prevent negative health
+        
                                 var playerHit = new
                                 {
                                     action = "Player Hit",
-                                    health = player.Value.state.health,
-                                    ID = player.Key,
-                                    attackerID = connection.ConnectionInfo.Id
-
+                                    health = hitPlayer.Value.state.health,
+                                    ID = hitPlayer.Key,
+                                    attackerID = socketID
                                 };
-                                player.Value.connection.Send(JsonSerializer.Serialize(playerHit));
+                                hitPlayer.Value.connection.Send(JsonSerializer.Serialize(playerHit));
                             }
                         }
                     }
@@ -165,18 +174,40 @@ websocketServer.Start(connection =>
                     break;
 
                 case "Player Stop Attack":
-                    Players[connection.ConnectionInfo.Id].state.isAttacking = false;
+                    //socketPlayer.isAttacking = false;
+                    break;
+
+                case "Player Parry":
+                    socketPlayer.health += socketPlayer.damage;
+                    var parPosition = doc.RootElement.GetProperty("position");
+                    var parX = parPosition.GetProperty("x").GetSingle();
+                    var parY = parPosition.GetProperty("y").GetSingle();
+                    var parZ = parPosition.GetProperty("z").GetSingle();
+
+                    socketPlayer.setPosition(parX, parY, parZ);
+
+                    var playerPar = new
+                    {
+                        action = "Player Move",
+                        position = PlayerState.SerializeVector3(socketPlayer.position),
+                        ID = socketID
+                    };
+
+                    foreach (var player in Players)
+                    {
+                        if (player.Key != socketID) player.Value.connection.Send(JsonSerializer.Serialize(playerPar));
+                    }
                     break;
 
                 case "Player Death":
                     foreach (var player in Players)
                     {
-                        if (player.Key != connection.ConnectionInfo.Id)
+                        if (player.Key != socketID)
                         {
                             var playerDeath = new
                             {
                                 action = "Player Death",
-                                ID = connection.ConnectionInfo.Id
+                                ID = socketID
                             };
                             player.Value.connection.Send(JsonSerializer.Serialize(playerDeath));
                         }
@@ -184,20 +215,20 @@ websocketServer.Start(connection =>
                     break;
 
                 case "Player Respawn":
-                    Players[connection.ConnectionInfo.Id].state.health = 100; // Reset health
-                    Players[connection.ConnectionInfo.Id].state.setPosition(0, 0, 0); // Reset position
-                    Players[connection.ConnectionInfo.Id].state.setRotation(0, 0, 0, 1); // Reset rotation
+                    socketPlayer.health = 100; // Reset health
+                    socketPlayer.setPosition(0, 0, 0); // Reset position
+                    socketPlayer.setRotation(0, 0, 0, 1); // Reset rotation
                     var playerRespawn = new
                     {
                         action = "Player Respawn",
-                        ID = connection.ConnectionInfo.Id,
-                        position = PlayerState.SerializeVector3(Players[connection.ConnectionInfo.Id].state.position),
-                        rotation = PlayerState.SerializeQuaternion(Players[connection.ConnectionInfo.Id].state.rotation),
-                        health = Players[connection.ConnectionInfo.Id].state.health
+                        ID = socketID,
+                        position = PlayerState.SerializeVector3(socketPlayer.position),
+                        rotation = PlayerState.SerializeQuaternion(socketPlayer.rotation),
+                        health = socketPlayer.health
                     };
                     foreach (var player in Players)
                     {
-                        if (player.Key != connection.ConnectionInfo.Id) player.Value.connection.Send(JsonSerializer.Serialize(playerRespawn));
+                        if (player.Key != socketID) player.Value.connection.Send(JsonSerializer.Serialize(playerRespawn));
                     }
                     break;
                 
@@ -219,7 +250,8 @@ class PlayerState
     public Vector3 position { get; set; }
     public Quaternion rotation { get; set; }
     public int health { get; set; }
-    public Boolean isAttacking { get; set; } = false;
+    public int damage { get; set; } = 20; // Example damage value
+    public bool isAttacking { get; set; } = false;
 
     public PlayerState()
     {
@@ -260,11 +292,7 @@ class PlayerState
 
         float dot = Vector3.Dot(forward, toTarget);
         bool isHit = dot >= threshold;
-        if (isHit)
-        {
-            target.health -= 20; // Example damage
-            if (target.health < 0) target.health = 0; // Prevent negative health
-        }
+
         return isHit;
     }
     public static object SerializeVector3(Vector3 vector)
@@ -275,6 +303,7 @@ class PlayerState
     {
         return new { x = quaternion.X, y = quaternion.Y, z = quaternion.Z, w = quaternion.W };
     }
+    
 
 }
 

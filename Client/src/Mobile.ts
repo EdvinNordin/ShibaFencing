@@ -76,7 +76,8 @@ export class MobileController {
 
     this.updateCameraPosition(true, deltaTime);
 
-    if (this.player.movable) this.move(socket, deltaTime);
+    if (this.player.movable && !this.player.isAttacking)
+      this.move(socket, deltaTime);
 
     if (!this.targetRotation.equals(this.player.rotation))
       this.rotateTowardsTarget(socket, deltaTime);
@@ -175,13 +176,6 @@ export class MobileController {
       this.player.isAttacking = true;
       this.player.weapon.Swing(socket);
       attackReady = false; // Reset attack readiness
-      socket.send(
-        JSON.stringify({
-          action: "Player Attack",
-          ID: this.player.ID,
-          range: this.player.weapon.range,
-        })
-      );
     }
   }
 

@@ -56,10 +56,10 @@ export function initializeWebSocket() {
         break;
 
       case "Player Hit":
-        const attckerPlayer = game.findPlayer(data.attackerID);
-        if (!attckerPlayer) return; // Ensure attacker exists
+        const attackerPlayer = game.findPlayer(data.attackerID);
+        if (!attackerPlayer) return; // Ensure attacker exists
         const attackerForward = new THREE.Vector3(0, 0, 1).applyQuaternion(
-          attckerPlayer.rotation
+          attackerPlayer.rotation
         ); // Get attacker's forward direction
         attackerForward.normalize(); // Ensure it's a unit vector
 
@@ -76,17 +76,32 @@ export function initializeWebSocket() {
         game.player.updatePosition(
           new RAPIER.Vector3(newPosition.x, newPosition.y, newPosition.z)
         );
-        socket.send(
-          JSON.stringify({
-            action: "Player Move",
-            position: {
-              x: game.player.position.x,
-              y: game.player.position.y,
-              z: game.player.position.z,
-            },
-          })
-        );
+
+        if (game.player.isAttacking) {
+          socket.send(
+            JSON.stringify({
+              action: "Player Parry",
+              position: {
+                x: game.player.position.x,
+                y: game.player.position.y,
+                z: game.player.position.z,
+              },
+            })
+          );
+        }
+
         if (!game.player.isAttacking) {
+          socket.send(
+            JSON.stringify({
+              action: "Player Move",
+              position: {
+                x: game.player.position.x,
+                y: game.player.position.y,
+                z: game.player.position.z,
+              },
+            })
+          );
+
           game.player.health = data.health;
           updateHealthBar();
           if (game.player.health <= 0) {

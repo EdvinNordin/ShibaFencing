@@ -39,7 +39,6 @@ export class Weapon {
   }
 
   Swing(socket: WebSocket) {
-    console.log("Swinging weapon");
     const duration = 0.3; // Duration of the swing in seconds
     const startTime = performance.now();
 
@@ -53,18 +52,25 @@ export class Weapon {
         t
       );
 
-      if (t < 1) {
+      if (elapsed < 1) {
         requestAnimationFrame(animate);
       } else {
+        if (game.player.isAttacking) {
+          socket.send(
+            JSON.stringify({
+              action: "Player Attack",
+              ID: game.player.ID,
+              range: game.player.weapon.range,
+            })
+          );
+        }
+        game.player.isAttacking = false;
+        this.Reset(); // Automatically reset after swing
         socket.send(
           JSON.stringify({
             action: "Player Stop Attack",
           })
         );
-
-        console.log("Stopped");
-        game.player.isAttacking = false;
-        this.Reset(); // Automatically reset after swing
       }
     };
 
