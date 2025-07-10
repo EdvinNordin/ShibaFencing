@@ -65,12 +65,7 @@ export class MobileController {
     if (swingButton) {
       swingButton.addEventListener("touchstart", (e) => {
         if (this.player.isAttacking) return;
-        this.player.isAttacking = true;
-        this.player.weapon.Swing();
         attackReady = true;
-        setTimeout(() => {
-          this.player.isAttacking = false;
-        }, 500);
       });
     }
     attackReady = false;
@@ -163,7 +158,7 @@ export class MobileController {
     const quat = new THREE.Quaternion().setFromUnitVectors(from, to);
 
     if (quat.angleTo(this.targetRotation) > 0.001) {
-      this.updateTargetRotation(quat);
+      this.targetRotation = quat;
     }
 
     // Send the updated position to the server
@@ -177,6 +172,8 @@ export class MobileController {
 
   attack(socket: WebSocket, deltaTime: number) {
     if (socket.readyState === WebSocket.OPEN) {
+      this.player.isAttacking = true;
+      this.player.weapon.Swing(socket);
       attackReady = false; // Reset attack readiness
       socket.send(
         JSON.stringify({
@@ -281,10 +278,6 @@ export class MobileController {
     );
   }
 
-  updateTargetRotation(rotation: THREE.Quaternion) {
-    this.targetRotation = rotation;
-  }
-
   fallingPossibility(socket: WebSocket, deltaTime: number) {
     const fallSpeed = 10 * deltaTime; // Scale falling speed by deltaTime
 
@@ -321,11 +314,12 @@ export class MobileController {
           })
         );
         this.player.respawn();
-      }, 3000); // Respawn after 2 seconds
+      }, 3000);
     } else if (
       Math.abs(this.player.position.x) > 11 ||
       Math.abs(this.player.position.z) > 11
     ) {
+      this.player.alive;
       this.player.movable = false;
       this.player.mesh.position.y -= fallSpeed;
       socket.send(
@@ -338,7 +332,7 @@ export class MobileController {
           },
         })
       );
-    } else if (this.player.mesh.position.y < 0.1) {
+    } else if (this.player.mesh.position.y < 0.1 && this.player.health > 0) {
       this.player.mesh.position.y = 0; // Reset height to 0 if close enough
       this.player.movable = true;
     }

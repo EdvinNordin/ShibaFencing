@@ -3,122 +3,156 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { game } from "./main";
 import { Player } from "./Player";
 
-export const socket = new WebSocket(import.meta.env.VITE_BACKEND_URL);
-
 let health = document.getElementById("hp") as HTMLDivElement;
 let hp = document.getElementById("currentHP");
-// Handle incoming events
-socket.onmessage = (event) => {
-  // The server sends JSON, so parse it
-  const data = JSON.parse(event.data);
-  switch (data.action) {
-    case "Set ID":
-      game.player.ID = data.ID;
-      break;
 
-    case "Send Old Players":
-      data.players.forEach((playerData: any) => {
+export function initializeWebSocket() {
+  const socket = new WebSocket(import.meta.env.VITE_BACKEND_URL);
+  // Handle incoming events
+  socket.onmessage = (event) => {
+    // The server sends JSON, so parse it
+    const data = JSON.parse(event.data);
+    switch (data.action) {
+      case "Set ID":
+        game.player.ID = data.ID;
+        break;
+
+      case "Send Old Players":
+        data.players.forEach((playerData: any) => {
+          let newPlayer = new Player();
+          newPlayer.ID = playerData.ID;
+          newPlayer.health = playerData.health;
+          newPlayer.updatePosition(playerData.position);
+          newPlayer.updateRotation(playerData.rotation);
+          game.addPlayer(newPlayer);
+        });
+        break;
+
+      case "New Player":
         let newPlayer = new Player();
-        newPlayer.ID = playerData.ID;
-        newPlayer.health = playerData.health;
-        newPlayer.updatePosition(playerData.position);
-        newPlayer.updateRotation(playerData.rotation);
+        newPlayer.ID = data.ID;
         game.addPlayer(newPlayer);
-      });
-      break;
+        break;
 
-    case "New Player":
-      let newPlayer = new Player();
-      newPlayer.ID = data.ID;
-      game.addPlayer(newPlayer);
-      break;
+      case "Player Move":
+        const movePlayer = game.findPlayer(data.ID);
+        if (movePlayer) {
+          movePlayer.updatePosition(data.position);
+        }
+        break;
 
-    case "Player Move":
-      const movePlayer = game.findPlayer(data.ID);
-      if (movePlayer) {
-        movePlayer.updatePosition(data.position);
-      }
-      break;
+      case "Player Rotate":
+        const rotatePlayer = game.findPlayer(data.ID);
+        if (rotatePlayer) {
+          rotatePlayer.updateRotation(data.rotation);
+        }
+        break;
 
-    case "Player Rotate":
-      const rotatePlayer = game.findPlayer(data.ID);
-      if (rotatePlayer) {
-        rotatePlayer.updateRotation(data.rotation);
-      }
-      break;
+      case "Player Attack":
+        const attackingPlayer = game.findPlayer(data.ID);
+        if (attackingPlayer) {
+          attackingPlayer.weapon.Swing(socket); // Trigger weapon swing animation
+        }
+        break;
 
-    case "Player Attack":
-      const attackingPlayer = game.findPlayer(data.ID);
-      if (attackingPlayer) {
-        attackingPlayer.weapon.Swing(); // Trigger weapon swing animation
-      }
-      break;
+      case "Player Hit":
+        const attckerPlayer = game.findPlayer(data.attackerID);
+        if (!attckerPlayer) return; // Ensure attacker exists
+        const attackerForward = new THREE.Vector3(0, 0, 1).applyQuaternion(
+          attckerPlayer.rotation
+        ); // Get attacker's forward direction
+        attackerForward.normalize(); // Ensure it's a unit vector
 
-    case "Player Hit":
-      game.player.health = data.health;
-      updateHealthBar();
-      if (game.player.health <= 0) {
+        // Apply knockback force in the attacker's forward direction
+        const knockbackForce = 3.0; // Adjust this value as needed
+        const knockbackVector = attackerForward.multiplyScalar(knockbackForce);
+
+        // Update the player's position with the knockback effect
+        const newPosition = new THREE.Vector3(
+          game.player.position.x + knockbackVector.x,
+          game.player.position.y + knockbackVector.y,
+          game.player.position.z + knockbackVector.z
+        );
+        game.player.updatePosition(
+          new RAPIER.Vector3(newPosition.x, newPosition.y, newPosition.z)
+        );
         socket.send(
           JSON.stringify({
-            action: "Player Death",
+            action: "Player Move",
+            position: {
+              x: game.player.position.x,
+              y: game.player.position.y,
+              z: game.player.position.z,
+            },
           })
         );
-        game.player.mesh.visible = false; // Hide player mesh if health is 0
-        setTimeout(() => {
-          socket.send(
-            JSON.stringify({
-              action: "Player Respawn",
-            })
-          );
-          game.player.health = 100;
+        if (!game.player.isAttacking) {
+          game.player.health = data.health;
           updateHealthBar();
-          game.player.updatePosition(new RAPIER.Vector3(0, 0, 0)); // Reset position
-          game.player.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
-          game.player.mesh.position.y = 10; // Reset height
-          game.player.mesh.visible = true;
-        }, 3000); // Respawn after 2 seconds
-      }
-      break;
+          if (game.player.health <= 0) {
+            socket.send(
+              JSON.stringify({
+                action: "Player Death",
+              })
+            );
+            game.player.mesh.visible = false; // Hide player mesh if health is 0
+            setTimeout(() => {
+              socket.send(
+                JSON.stringify({
+                  action: "Player Respawn",
+                })
+              );
+              game.player.health = 100;
+              updateHealthBar();
+              game.player.updatePosition(new RAPIER.Vector3(0, 0, 0)); // Reset position
+              game.player.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
+              game.player.mesh.position.y = 10; // Reset height
+              game.player.mesh.visible = true;
+            }, 3000); // Respawn after 2 seconds
+          }
+        }
+        break;
 
-    case "Player Death":
-      const deadPlayer = game.findPlayer(data.ID);
-      if (deadPlayer) {
-        deadPlayer.mesh.visible = false;
-      }
-      break;
+      case "Player Death":
+        const deadPlayer = game.findPlayer(data.ID);
+        if (deadPlayer) {
+          deadPlayer.mesh.visible = false;
+        }
+        break;
 
-    case "Player Respawn":
-      const respawnPlayer = game.findPlayer(data.ID);
-      if (respawnPlayer) {
-        respawnPlayer.health = data.health; // Reset health
-        respawnPlayer.updatePosition(data.position); // Reset position
-        respawnPlayer.updateRotation(data.rotation); // Reset rotation
-        respawnPlayer.mesh.position.y = 10; // Reset height
-        respawnPlayer.mesh.visible = true; // Show player mesh again
-      }
-      break;
+      case "Player Respawn":
+        const respawnPlayer = game.findPlayer(data.ID);
+        if (respawnPlayer) {
+          respawnPlayer.health = data.health; // Reset health
+          respawnPlayer.updatePosition(data.position); // Reset position
+          respawnPlayer.updateRotation(data.rotation); // Reset rotation
+          respawnPlayer.mesh.position.y = 10; // Reset height
+          respawnPlayer.mesh.visible = true; // Show player mesh again
+        }
+        break;
 
-    case "Remove Player":
-      const disconnectedPlayer = game.findPlayer(data.ID);
-      if (disconnectedPlayer) {
-        game.removePlayer(disconnectedPlayer);
-      }
-      break;
-  }
-};
+      case "Remove Player":
+        const disconnectedPlayer = game.findPlayer(data.ID);
+        if (disconnectedPlayer) {
+          game.removePlayer(disconnectedPlayer);
+        }
+        break;
+    }
+  };
 
-socket.onopen = () => {
-  //console.log("Opened connection to server");
-};
+  socket.onopen = () => {
+    //console.log("Opened connection to server");
+  };
 
-socket.onclose = () => {
-  //console.log("Disconnected from server");
-};
+  socket.onclose = () => {
+    //console.log("Disconnected from server");
+  };
 
-socket.onerror = (error) => {
-  //console.error("WebSocket error:", error);
-};
-
+  socket.onerror = (error) => {
+    //console.error("WebSocket error:", error);
+  };
+  return socket;
+}
 function updateHealthBar() {
   health.style.width = `${game.player.health}%`;
   health.style.backgroundColor =

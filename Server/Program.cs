@@ -134,6 +134,7 @@ websocketServer.Start(connection =>
 
                 case "Player Attack":
                     //var ID = doc.RootElement.GetProperty("ID");
+                    Players[connection.ConnectionInfo.Id].state.isAttacking = true;
                     foreach (var player in Players)
                     {
                         if (player.Key != connection.ConnectionInfo.Id)
@@ -152,7 +153,8 @@ websocketServer.Start(connection =>
                                 {
                                     action = "Player Hit",
                                     health = player.Value.state.health,
-                                    ID = player.Key
+                                    ID = player.Key,
+                                    attackerID = connection.ConnectionInfo.Id
 
                                 };
                                 player.Value.connection.Send(JsonSerializer.Serialize(playerHit));
@@ -160,6 +162,10 @@ websocketServer.Start(connection =>
                         }
                     }
 
+                    break;
+
+                case "Player Stop Attack":
+                    Players[connection.ConnectionInfo.Id].state.isAttacking = false;
                     break;
 
                 case "Player Death":
@@ -213,6 +219,7 @@ class PlayerState
     public Vector3 position { get; set; }
     public Quaternion rotation { get; set; }
     public int health { get; set; }
+    public Boolean isAttacking { get; set; } = false;
 
     public PlayerState()
     {

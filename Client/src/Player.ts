@@ -3,7 +3,7 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { Weapon } from "./Weapon";
 import { model } from "./main";
 import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
-
+let id = 0;
 export class Player {
   name: string = "Player";
   mesh: THREE.Object3D;
@@ -18,7 +18,8 @@ export class Player {
   alive: boolean = true; // Flag to check if player is alive
 
   constructor() {
-    this.ID = crypto.randomUUID();
+    id++;
+    this.ID = id.toString();
 
     this.mesh = model.clone();
 

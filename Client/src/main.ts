@@ -2,6 +2,7 @@ import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Game } from "./Game";
 import { loadModel, loadWeapon } from "./Loader";
+import { initializeWebSocket } from "./Network";
 
 export let game: Game;
 export let weapon: THREE.Object3D;
@@ -53,7 +54,7 @@ async function init() {
     game.renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  const { socket } = await import("./Network");
+  const socket = initializeWebSocket();
   let clock = new THREE.Clock();
   let deltaTime = 0;
   function update() {

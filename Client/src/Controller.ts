@@ -78,7 +78,7 @@ export class Controller {
       const quat = new THREE.Quaternion().setFromUnitVectors(from, to);
 
       if (quat !== this.targetRotation) {
-        this.updateTargetRotation(quat);
+        this.targetRotation = quat;
       }
 
       socket.send(
@@ -92,10 +92,7 @@ export class Controller {
 
   attack(socket: WebSocket) {
     this.player.isAttacking = true;
-    this.player.weapon.Swing();
-    setTimeout(() => {
-      this.player.isAttacking = false;
-    }, 500);
+    this.player.weapon.Swing(socket);
 
     socket.send(
       JSON.stringify({
@@ -208,10 +205,6 @@ export class Controller {
         },
       })
     );
-  }
-
-  updateTargetRotation(rotation: THREE.Quaternion) {
-    this.targetRotation = rotation;
   }
 
   fallingPossibility(socket: WebSocket, deltaTime: number) {
