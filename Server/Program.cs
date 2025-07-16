@@ -139,80 +139,59 @@ websocketServer.Start(connection =>
                     break;
 
                 case "Player Attack":
-                    //var ID = doc.RootElement.GetProperty("ID");
-                    //socketPlayer.isAttacking = true;
-                    foreach (var hitPlayer in Players)
+
+                    foreach (var player in Players)
                     {
-                        if (hitPlayer.Key != socketID)
+
+                        //var hitPlayer = Players[socketID]; // Default to self
+                        if (player.Key != socketID)
                         {
+                            // Notify other players about the attack
                             var playerAttack = new
                             {
                                 action = "Player Attack",
                                 ID = socketID
                             };
-                            hitPlayer.Value.connection.Send(JsonSerializer.Serialize(playerAttack));
-
-                            var range = doc.RootElement.GetProperty("range").GetSingle();
-                            if (socketPlayer.attack(hitPlayer.Value.state, range))
-                            {
-                       
-                                hitPlayer.Value.state.health -= hitPlayer.Value.state.damage; // Example damage
-                                if (hitPlayer.Value.state.health < 0) hitPlayer.Value.state.health = 0; // Prevent negative health
-        
-                                var playerHit = new
-                                {
-                                    action = "Player Hit",
-                                    health = hitPlayer.Value.state.health,
-                                    ID = hitPlayer.Key,
-                                    attackerID = socketID
-                                };
-                                hitPlayer.Value.connection.Send(JsonSerializer.Serialize(playerHit));
-                            }
+                            player.Value.connection.Send(JsonSerializer.Serialize(playerAttack));
                         }
                     }
-
                     break;
 
-                case "Player Stop Attack":
-                    //socketPlayer.isAttacking = false;
+               
+
+                case "Player Hit":
+                    var hitID = doc.RootElement.GetProperty("hitID").GetGuid();
+                    var damage = doc.RootElement.GetProperty("damage").GetInt32();
+
+                    var hitPlayer = Players[hitID];
+                    hitPlayer.state.health -= damage; // Apply damage
+
+                    var playerHit = new
+                        {
+                            action = "Player Hit",
+                            health = hitPlayer.state.health,
+                            ID = hitPlayer.connection.ConnectionInfo.Id,
+                            attackerID = socketID
+                        };
+
+                    hitPlayer.connection.Send(JsonSerializer.Serialize(playerHit));
                     break;
 
                 case "Player Parry":
-                    socketPlayer.health += socketPlayer.damage;
-                    var parPosition = doc.RootElement.GetProperty("position");
-                    var parX = parPosition.GetProperty("x").GetSingle();
-                    var parY = parPosition.GetProperty("y").GetSingle();
-                    var parZ = parPosition.GetProperty("z").GetSingle();
-
-                    socketPlayer.setPosition(parX, parY, parZ);
-
-                    var playerPar = new
-                    {
-                        action = "Player Move",
-                        position = PlayerState.SerializeVector3(socketPlayer.position),
-                        ID = socketID
-                    };
-
-                    foreach (var player in Players)
-                    {
-                        if (player.Key != socketID) player.Value.connection.Send(JsonSerializer.Serialize(playerPar));
-                    }
-                    break;
-
-                case "Player Death":
-                    foreach (var player in Players)
-                    {
-                        if (player.Key != socketID)
+                    var parryID = doc.RootElement.GetProperty("parryID").GetGuid();
+                    var parryPlayer = Players[parryID];
+                    var playerParry = new
                         {
-                            var playerDeath = new
-                            {
-                                action = "Player Death",
-                                ID = socketID
-                            };
-                            player.Value.connection.Send(JsonSerializer.Serialize(playerDeath));
-                        }
-                    }
+                            action = "Player Hit",
+                            health = parryPlayer.state.health,
+                            ID = parryPlayer.connection.ConnectionInfo.Id,
+                            attackerID = socketID
+                        };
+
+                    parryPlayer.connection.Send(JsonSerializer.Serialize(playerParry));
+
                     break;
+
 
                 case "Player Respawn":
                     socketPlayer.health = 100; // Reset health
@@ -231,7 +210,7 @@ websocketServer.Start(connection =>
                         if (player.Key != socketID) player.Value.connection.Send(JsonSerializer.Serialize(playerRespawn));
                     }
                     break;
-                
+
             }
         }
         catch (Exception ex)
@@ -239,6 +218,13 @@ websocketServer.Start(connection =>
             Console.WriteLine("Error parsing message: " + message);
             Console.WriteLine("Error: " + ex.Message);
             Console.WriteLine("Error source: " + ex.Source);
+            var serverError = new
+                {
+                    action = "Server Error",
+                    message = ex.Message,
+                    problem = message
+                };
+            Players[socketID].connection.Send(JsonSerializer.Serialize(serverError));
         }
     };
 });
@@ -252,6 +238,9 @@ class PlayerState
     public int health { get; set; }
     public int damage { get; set; } = 20; // Example damage value
     public bool isAttacking { get; set; } = false;
+    public bool isParried { get; set; } = false;
+    public Guid attackedID { get; set; } = Guid.Empty;
+    
 
     public PlayerState()
     {

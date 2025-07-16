@@ -150,7 +150,7 @@ export class MobileController {
     this.cameraTargetPosition.copy(this.offsetCalc(nextPos3));
 
     // Update the player's position
-    game.rigidBody.setNextKinematicTranslation(nextPos);
+    this.player.rigidBody.setNextKinematicTranslation(nextPos);
     this.player.updatePosition(nextPos);
 
     // Update the player's rotation to face the movement direction
@@ -174,6 +174,13 @@ export class MobileController {
   attack(socket: WebSocket, deltaTime: number) {
     if (socket.readyState === WebSocket.OPEN) {
       this.player.isAttacking = true;
+      socket.send(
+        JSON.stringify({
+          action: "Player Attack",
+          ID: this.player.ID,
+          range: this.player.weapon.range,
+        })
+      );
       this.player.weapon.Swing(socket);
       attackReady = false; // Reset attack readiness
     }

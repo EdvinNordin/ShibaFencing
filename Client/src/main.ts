@@ -35,7 +35,7 @@ async function init() {
   let groundMaterial = new THREE.MeshStandardMaterial({ color: 0x1a7b29 });
   let groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
   groundMesh.receiveShadow = true;
-  groundMesh.position.set(0, -1.5, 0);
+  groundMesh.position.set(0, -1, 0);
   game.scene.add(groundMesh);
 
   let groundColliderDesc = RAPIER.ColliderDesc.cuboid(

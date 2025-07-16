@@ -21,6 +21,7 @@ export class Controller {
     this.camera = camera;
     this.input = new InputManager();
   }
+  number = 0;
 
   updateController(deltaTime: number, socket: WebSocket) {
     this.updateCameraOrbit(this.input, deltaTime);
@@ -37,6 +38,12 @@ export class Controller {
       this.attack(socket);
 
     this.fallingPossibility(socket, deltaTime);
+
+    const globalPosition = new THREE.Vector3();
+    this.player.weapon.mesh.getWorldPosition(globalPosition);
+    this.player.weapon.rigidBody.setNextKinematicTranslation(
+      new RAPIER.Vector3(globalPosition.x, globalPosition.y, globalPosition.z)
+    );
   }
 
   move(socket: WebSocket, deltaTime: number) {
@@ -69,8 +76,6 @@ export class Controller {
 
       this.cameraTargetPosition.copy(this.offsetCalc(nextPos3));
 
-      game.rigidBody.setNextKinematicTranslation(nextPos);
-
       this.player.updatePosition(nextPos);
 
       const from = new THREE.Vector3(0, 0, 1); // forward
@@ -93,14 +98,14 @@ export class Controller {
 
   attack(socket: WebSocket) {
     this.player.isAttacking = true;
-    this.player.weapon.Swing(socket);
-    /*socket.send(
+    socket.send(
       JSON.stringify({
         action: "Player Attack",
         ID: this.player.ID,
         range: this.player.weapon.range,
       })
-    );*/
+    );
+    this.player.weapon.Swing(socket);
   }
 
   updateCameraOrbit(input: InputManager, deltaTime: number) {
@@ -184,15 +189,10 @@ export class Controller {
     ); // Scale slerp factor by deltaTime
 
     if (this.player.rotation.angleTo(this.targetRotation) < 0.001) {
-      this.player.rotation.copy(this.targetRotation);
+      this.player.updateRotation(this.targetRotation);
     }
 
-    this.player.mesh.quaternion.set(
-      this.player.rotation.x,
-      this.player.rotation.y,
-      this.player.rotation.z,
-      this.player.rotation.w
-    );
+    this.player.updateRotation(this.player.rotation);
 
     socket.send(
       JSON.stringify({

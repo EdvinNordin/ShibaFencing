@@ -13,7 +13,6 @@ export class Game {
   players: Map<string, Player>;
   controller: Controller | MobileController;
   player: Player;
-  rigidBody: RAPIER.RigidBody;
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -40,12 +39,8 @@ export class Game {
     document.body.appendChild(this.renderer.domElement);
 
     this.players = new Map<string, Player>();
-    this.player = new Player();
+    this.player = new Player(this.world);
     this.addPlayer(this.player);
-
-    const rbDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
-    this.rigidBody = this.world.createRigidBody(rbDesc);
-    this.rigidBody.setNextKinematicTranslation(new RAPIER.Vector3(0, 0, 0));
 
     if (isMobile) {
       this.controller = new MobileController(

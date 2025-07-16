@@ -7,6 +7,9 @@ let id = 0;
 export class Player {
   name: string = "Player";
   mesh: THREE.Object3D;
+  rigidBody: RAPIER.RigidBody;
+  collider: RAPIER.Collider;
+  offset: RAPIER.Vector3;
   position: RAPIER.Vector3 = new RAPIER.Vector3(0, 0, 0);
   rotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
   health: number = 100;
@@ -16,33 +19,56 @@ export class Player {
   isAttacking: boolean = false;
   movable: boolean = false; // Flag to control movement
   alive: boolean = true; // Flag to check if player is alive
+  gotHit: boolean = false; // Flag to check if player got hit
 
-  constructor() {
+  constructor(world: RAPIER.World) {
     id++;
     this.ID = id.toString();
 
     this.mesh = model.clone();
+    const box = new THREE.Box3().setFromObject(this.mesh); // Compute the bounding box
+    const size = new THREE.Vector3();
+    box.getSize(size);
+
+    this.offset = new RAPIER.Vector3(size.x / 2, size.y / 2, size.z / 2);
 
     this.mesh.position.set(this.position.x, 10, this.position.z);
 
-    this.weapon = new Weapon();
+    const rbDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
+    this.rigidBody = world.createRigidBody(rbDesc);
+    let colliderDesc = RAPIER.ColliderDesc.cuboid(
+      this.offset.x,
+      this.offset.y,
+      this.offset.z
+    );
+    this.collider = world.createCollider(colliderDesc, this.rigidBody);
+    this.collider.setSensor(true); // Set the collider as a sensor
+
+    this.weapon = new Weapon(world, this);
     this.mesh.add(this.weapon.mesh);
-    this.weapon.mesh.position.set(0, -0.1, 0.3);
+    this.weapon.mesh.position.set(0, 0.4, 0.75);
   }
 
   updatePosition(position: RAPIER.Vector3) {
-    this.mesh.position.set(position.x, position.y, position.z);
     this.position = position;
+    this.mesh.position.set(position.x, position.y, position.z);
+    this.rigidBody.setNextKinematicTranslation(position);
+
+    const globalPosition = new THREE.Vector3();
+    this.weapon.mesh.getWorldPosition(globalPosition);
+    this.weapon.rigidBody.setNextKinematicTranslation(
+      new RAPIER.Vector3(globalPosition.x, globalPosition.y, globalPosition.z)
+    );
   }
 
   updateRotation(rotation: THREE.Quaternion) {
     this.rotation = rotation;
-    this.mesh.quaternion.set(
-      this.rotation.x,
-      this.rotation.y,
-      this.rotation.z,
-      this.rotation.w
-    );
+    this.mesh.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+    this.rigidBody.setNextKinematicRotation(rotation);
+
+    let globalQuaternion = new THREE.Quaternion();
+    this.weapon.mesh.getWorldQuaternion(globalQuaternion);
+    this.weapon.rigidBody.setRotation(globalQuaternion, false);
   }
 
   death() {

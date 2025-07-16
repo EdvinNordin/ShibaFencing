@@ -19,7 +19,7 @@ export function initializeWebSocket() {
 
       case "Send Old Players":
         data.players.forEach((playerData: any) => {
-          let newPlayer = new Player();
+          let newPlayer = new Player(game.world);
           newPlayer.ID = playerData.ID;
           newPlayer.health = playerData.health;
           newPlayer.updatePosition(playerData.position);
@@ -29,7 +29,7 @@ export function initializeWebSocket() {
         break;
 
       case "New Player":
-        let newPlayer = new Player();
+        let newPlayer = new Player(game.world);
         newPlayer.ID = data.ID;
         game.addPlayer(newPlayer);
         break;
@@ -51,6 +51,7 @@ export function initializeWebSocket() {
       case "Player Attack":
         const attackingPlayer = game.findPlayer(data.ID);
         if (attackingPlayer) {
+          attackingPlayer.isAttacking = true; // Set attacking state
           attackingPlayer.weapon.Swing(socket); // Trigger weapon swing animation
         }
         break;
@@ -58,6 +59,8 @@ export function initializeWebSocket() {
       case "Player Hit":
         const attackerPlayer = game.findPlayer(data.attackerID);
         if (!attackerPlayer) return; // Ensure attacker exists
+
+        // Apply knockback effect to the attacked player
         const attackerForward = new THREE.Vector3(0, 0, 1).applyQuaternion(
           attackerPlayer.rotation
         ); // Get attacker's forward direction
@@ -77,55 +80,43 @@ export function initializeWebSocket() {
           new RAPIER.Vector3(newPosition.x, newPosition.y, newPosition.z)
         );
 
-        if (game.player.isAttacking) {
+        socket.send(
+          JSON.stringify({
+            action: "Player Move",
+            position: {
+              x: game.player.position.x,
+              y: game.player.position.y,
+              z: game.player.position.z,
+            },
+          })
+        );
+
+        game.player.health = data.health;
+        updateHealthBar();
+
+        // Check if this kills the player
+        if (game.player.health <= 0) {
           socket.send(
             JSON.stringify({
-              action: "Player Parry",
-              position: {
-                x: game.player.position.x,
-                y: game.player.position.y,
-                z: game.player.position.z,
-              },
+              action: "Player Death",
             })
           );
-        }
-
-        if (!game.player.isAttacking) {
-          socket.send(
-            JSON.stringify({
-              action: "Player Move",
-              position: {
-                x: game.player.position.x,
-                y: game.player.position.y,
-                z: game.player.position.z,
-              },
-            })
-          );
-
-          game.player.health = data.health;
-          updateHealthBar();
-          if (game.player.health <= 0) {
+          game.player.mesh.visible = false; // Hide player mesh if health is 0
+          setTimeout(() => {
             socket.send(
               JSON.stringify({
-                action: "Player Death",
+                action: "Player Respawn",
               })
             );
-            game.player.mesh.visible = false; // Hide player mesh if health is 0
-            setTimeout(() => {
-              socket.send(
-                JSON.stringify({
-                  action: "Player Respawn",
-                })
-              );
-              game.player.health = 100;
-              updateHealthBar();
-              game.player.updatePosition(new RAPIER.Vector3(0, 0, 0)); // Reset position
-              game.player.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
-              game.player.mesh.position.y = 10; // Reset height
-              game.player.mesh.visible = true;
-            }, 3000); // Respawn after 2 seconds
-          }
+            game.player.health = 100;
+            updateHealthBar();
+            game.player.updatePosition(new RAPIER.Vector3(0, 0, 0)); // Reset position
+            game.player.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
+            game.player.mesh.position.y = 10; // Reset height
+            game.player.mesh.visible = true;
+          }, 3000); // Respawn after 2 seconds
         }
+
         break;
 
       case "Player Death":
@@ -151,6 +142,11 @@ export function initializeWebSocket() {
         if (disconnectedPlayer) {
           game.removePlayer(disconnectedPlayer);
         }
+        break;
+
+      case "Server Error":
+        console.log("Server Error");
+        console.error("Server Error:", data.message, "In: ", data.problem);
         break;
     }
   };
