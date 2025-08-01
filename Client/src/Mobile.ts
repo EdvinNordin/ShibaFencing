@@ -3,10 +3,12 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { game } from "./main";
 import { Player } from "./Player";
 import nipplejs from "nipplejs";
+import screenfull from "screenfull";
 
 const joystickZone = document.getElementById("joystickZone");
 const rotateZone = document.getElementById("rotateZone");
 const swingButton = document.getElementById("swingButton");
+const fullscreenButton = document.getElementById("fullscreenButton");
 let attackReady = false;
 
 export class MobileController {
@@ -36,7 +38,6 @@ export class MobileController {
       position: { left: "50%", top: "50%" },
       restOpacity: 1,
     });
-    swingButton?.style.setProperty("display", "block");
 
     if (rotateZone) {
       rotateZone.addEventListener("touchstart", (e) => {
@@ -63,12 +64,22 @@ export class MobileController {
     }
 
     if (swingButton) {
+      swingButton.style.setProperty("display", "block");
       swingButton.addEventListener("touchstart", (e) => {
         if (this.player.isAttacking) return;
         attackReady = true;
       });
     }
     attackReady = false;
+
+    if (fullscreenButton) {
+      fullscreenButton.style.setProperty("display", "block");
+      fullscreenButton.addEventListener("click", () => {
+        if (screenfull.isEnabled) {
+          screenfull.toggle();
+        }
+      });
+    }
   }
 
   updateController(deltaTime: number, socket: WebSocket) {

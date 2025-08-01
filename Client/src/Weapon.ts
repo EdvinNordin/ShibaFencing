@@ -87,15 +87,8 @@ export class Weapon {
       if (t < 1 && this.owner.isAttacking) {
         requestAnimationFrame(animate);
       } else {
-        this.Reset(); // Automatically reset after swing
+        this.Reset();
 
-        /*if (game.player.isAttacking) {
-          socket.send(
-            JSON.stringify({
-              action: "Player Stop Attack",
-            })
-          );
-        }*/
         game.players.forEach((player) => {
           if (player.gotHit) {
             player.gotHit = false; // Reset gotHit flag after processing
@@ -117,14 +110,8 @@ export class Weapon {
         this.collider.contactCollider(player.weapon.collider, 0)
       ) {
         player.gotHit = true;
-        /*socket.send(
-          JSON.stringify({
-            action: "Player Parry",
-            parryID: player.ID,
-          })
-        );*/
+        this.Reset();
         this.knockback(player, socket);
-        console.log("KNOCKBACK");
       } else if (this.collider.contactCollider(player.collider, 0)) {
         player.gotHit = true;
         socket.send(
@@ -193,5 +180,9 @@ export class Weapon {
     temp.copy(this.originalRotation);
     this.originalRotation.copy(this.swingRotation);
     this.swingRotation.copy(temp);
+  }
+
+  Parry() {
+    // Implement parry logic here if needed
   }
 }
