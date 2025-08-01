@@ -3,6 +3,7 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { weapon } from "./main";
 import { game } from "./main";
 import { Player } from "./Player";
+import { spark } from "./Loader";
 
 let offset = new RAPIER.Vector3(0, 0, 0);
 
@@ -95,6 +96,7 @@ export class Weapon {
           }
         });
         this.owner.isAttacking = false;
+        //this.Spark(this.rigidBody.translation());
       }
     };
 
@@ -104,14 +106,10 @@ export class Weapon {
   checkCollision(socket: WebSocket) {
     game.players.forEach((player) => {
       if (player === game.player || player.gotHit) return;
-
-      if (
-        player.isAttacking &&
-        this.collider.contactCollider(player.weapon.collider, 0)
-      ) {
-        player.gotHit = true;
-        this.Reset();
-        this.knockback(player, socket);
+      const contact = this.collider.contactCollider(player.weapon.collider, 0);
+      if (player.isAttacking && contact) {
+        const contactPoint = contact.point1;
+        this.Parry(contactPoint, player, socket);
       } else if (this.collider.contactCollider(player.collider, 0)) {
         player.gotHit = true;
         socket.send(
@@ -182,7 +180,37 @@ export class Weapon {
     this.swingRotation.copy(temp);
   }
 
-  Parry() {
-    // Implement parry logic here if needed
+  Parry(contactPoint: RAPIER.Vector, player: Player, socket: WebSocket) {
+    this.Spark(contactPoint);
+    player.gotHit = true;
+    this.Reset();
+    this.knockback(player, socket);
+  }
+
+  Spark(contactPoint: RAPIER.Vector) {
+    if (contactPoint) {
+      const sparkInstance = spark.clone();
+
+      game.scene.add(sparkInstance);
+      sparkInstance.position.set(
+        contactPoint.x,
+        contactPoint.y,
+        contactPoint.z
+      );
+
+      let life = 1; // seconds
+      const dt: number = game.deltaTime; // Use the delta time from the game
+      const animate = (dt: number) => {
+        life -= dt;
+        sparkInstance.scale.setScalar(life * 2); // Scale the spark based on its life
+        sparkInstance.material.opacity = life;
+        if (life <= 0) {
+          game.scene.remove(sparkInstance);
+        } else {
+          requestAnimationFrame(() => animate(0.016)); // ~60fps
+        }
+      };
+      animate(0.016);
+    }
   }
 }

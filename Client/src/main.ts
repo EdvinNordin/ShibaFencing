@@ -61,7 +61,8 @@ async function init() {
     deltaTime = clock.getDelta();
     deltaTime = Math.min(deltaTime, 0.1);
     //debugRenderer.update();
-    game.controller.updateController(deltaTime, socket);
+    game.updateDeltaTime(deltaTime);
+    game.controller.updateController(socket);
     game.world.step();
     game.renderer.render(game.scene, game.camera);
   }

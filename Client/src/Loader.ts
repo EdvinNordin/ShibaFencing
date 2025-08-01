@@ -36,3 +36,12 @@ export function loadWeapon(): Promise<THREE.Object3D> {
     });
   });
 }
+
+const sparkTexture = new THREE.TextureLoader().load("spark.png"); // load spark texture
+const sparkMaterial = new THREE.SpriteMaterial({
+  map: sparkTexture,
+  transparent: true,
+});
+const spark = new THREE.Sprite(sparkMaterial);
+spark.scale.set(1, 1, 1); // adjust spark size
+export { spark };

@@ -23,21 +23,20 @@ export class Controller {
   }
   number = 0;
 
-  updateController(deltaTime: number, socket: WebSocket) {
-    this.updateCameraOrbit(this.input, deltaTime);
+  updateController(socket: WebSocket) {
+    this.updateCameraOrbit(this.input);
 
-    this.updateCameraPosition(true, deltaTime);
+    this.updateCameraPosition(true);
 
-    if (this.player.movable && !this.player.isAttacking)
-      this.move(socket, deltaTime);
+    if (this.player.movable && !this.player.isAttacking) this.move(socket);
 
     if (!this.targetRotation.equals(this.player.rotation))
-      this.rotateTowardsTarget(socket, deltaTime);
+      this.rotateTowardsTarget(socket);
 
     if (this.input.isPressed(" ") && !this.player.isAttacking)
       this.attack(socket);
 
-    this.fallingPossibility(socket, deltaTime);
+    this.fallingPossibility(socket);
 
     const globalPosition = new THREE.Vector3();
     this.player.weapon.mesh.getWorldPosition(globalPosition);
@@ -46,7 +45,7 @@ export class Controller {
     );
   }
 
-  move(socket: WebSocket, deltaTime: number) {
+  move(socket: WebSocket) {
     const threeDirection = new THREE.Vector3(0, 0, 0);
     let movement = false;
     if (this.input.isPressed("w")) (threeDirection.z -= 1), (movement = true);
@@ -58,7 +57,7 @@ export class Controller {
       threeDirection.applyQuaternion(this.camera.quaternion);
       threeDirection.y = 0;
       threeDirection.normalize();
-      threeDirection.multiplyScalar(this.player.speed * deltaTime); // Scale movement by deltaTime
+      threeDirection.multiplyScalar(this.player.speed * game.deltaTime); // Scale movement by deltaTime
 
       const direction = new RAPIER.Vector3(
         threeDirection.x,
@@ -108,9 +107,9 @@ export class Controller {
     this.player.weapon.Swing(socket);
   }
 
-  updateCameraOrbit(input: InputManager, deltaTime: number) {
+  updateCameraOrbit(input: InputManager) {
     let rotateBool = false;
-    const rotationSpeed = deltaTime; // Scale rotation speed by deltaTime
+    const rotationSpeed = game.deltaTime; // Scale rotation speed by deltaTime
 
     if (input.isPressed("ArrowLeft") || input.isPressed("j"))
       (this.camera.userData.orbitAngle += rotationSpeed), (rotateBool = true);
@@ -119,10 +118,10 @@ export class Controller {
     if (this.camera.userData.orbitAngle === undefined)
       this.camera.userData.orbitAngle = 0;
 
-    if (rotateBool) this.updateCameraPosition(true, deltaTime);
+    if (rotateBool) this.updateCameraPosition(true);
   }
 
-  updateCameraPosition(isLerp: boolean, deltaTime: number) {
+  updateCameraPosition(isLerp: boolean) {
     // Smoothly interpolate the camera target position
     const playerPos = new THREE.Vector3(
       this.player.position.x,
@@ -137,7 +136,10 @@ export class Controller {
     const currentPos = this.camera.position.clone(); // Start from the camera's current position
 
     if (isLerp) {
-      currentPos.lerp(this.cameraTargetPosition, 1 - Math.pow(0.01, deltaTime)); // Scale lerp factor by deltaTime
+      currentPos.lerp(
+        this.cameraTargetPosition,
+        1 - Math.pow(0.01, game.deltaTime)
+      ); // Scale lerp factor by deltaTime
       if (
         Math.abs(currentPos.x - this.cameraTargetPosition.x) < 0.001 &&
         Math.abs(currentPos.y - this.cameraTargetPosition.y) < 0.001 &&
@@ -182,10 +184,10 @@ export class Controller {
     );
   }
 
-  rotateTowardsTarget(socket: WebSocket, deltaTime: number) {
+  rotateTowardsTarget(socket: WebSocket) {
     this.player.rotation.slerp(
       this.targetRotation,
-      1 - Math.pow(0.001, deltaTime)
+      1 - Math.pow(0.001, game.deltaTime)
     ); // Scale slerp factor by deltaTime
 
     if (this.player.rotation.angleTo(this.targetRotation) < 0.001) {
@@ -207,8 +209,8 @@ export class Controller {
     );
   }
 
-  fallingPossibility(socket: WebSocket, deltaTime: number) {
-    const fallSpeed = 10 * deltaTime; // Scale falling speed by deltaTime
+  fallingPossibility(socket: WebSocket) {
+    const fallSpeed = 10 * game.deltaTime; // Scale falling speed by deltaTime
 
     if (
       this.player.mesh.position.y > 0 &&

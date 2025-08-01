@@ -13,6 +13,7 @@ export class Game {
   players: Map<string, Player>;
   controller: Controller | MobileController;
   player: Player;
+  deltaTime: number = 0;
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -51,6 +52,10 @@ export class Game {
     } else {
       this.controller = new Controller(this.player, this.world, this.camera);
     }
+  }
+
+  updateDeltaTime(deltaTime: number) {
+    this.deltaTime = deltaTime;
   }
 
   addPlayer(newPlayer: Player) {

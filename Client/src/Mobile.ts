@@ -82,23 +82,22 @@ export class MobileController {
     }
   }
 
-  updateController(deltaTime: number, socket: WebSocket) {
-    this.updateCameraOrbit(this.input, deltaTime);
+  updateController(socket: WebSocket) {
+    this.updateCameraOrbit(this.input);
 
-    this.updateCameraPosition(true, deltaTime);
+    this.updateCameraPosition(true);
 
-    if (this.player.movable && !this.player.isAttacking)
-      this.move(socket, deltaTime);
+    if (this.player.movable && !this.player.isAttacking) this.move(socket);
 
     if (!this.targetRotation.equals(this.player.rotation))
-      this.rotateTowardsTarget(socket, deltaTime);
+      this.rotateTowardsTarget(socket);
 
-    if (!this.player.isAttacking && attackReady) this.attack(socket, deltaTime);
+    if (!this.player.isAttacking && attackReady) this.attack(socket);
 
-    this.fallingPossibility(socket, deltaTime);
+    this.fallingPossibility(socket);
   }
 
-  move(socket: WebSocket, deltaTime: number) {
+  move(socket: WebSocket) {
     this.joystick.on("move", (e, data) => {
       this.joystickCentered = false;
       this.joystickPosition.set(data.vector.x, 0, -data.vector.y);
@@ -140,7 +139,7 @@ export class MobileController {
 
     // Normalize and scale the movement vector
     threeDirection.normalize();
-    threeDirection.multiplyScalar(this.player.speed * deltaTime);
+    threeDirection.multiplyScalar(this.player.speed * game.deltaTime);
 
     // Convert the movement vector to RAPIER's format
     const direction = new RAPIER.Vector3(
@@ -182,7 +181,7 @@ export class MobileController {
     );
   }
 
-  attack(socket: WebSocket, deltaTime: number) {
+  attack(socket: WebSocket) {
     if (socket.readyState === WebSocket.OPEN) {
       this.player.isAttacking = true;
       socket.send(
@@ -197,17 +196,17 @@ export class MobileController {
     }
   }
 
-  updateCameraOrbit(input: InputManager, deltaTime: number) {
+  updateCameraOrbit(input: InputManager) {
     let rotateBool = false;
-    const rotationSpeed = 10 * deltaTime;
+    const rotationSpeed = 10 * game.deltaTime;
 
     if (this.camera.userData.orbitAngle === undefined)
       this.camera.userData.orbitAngle = 0;
 
-    if (rotateBool) this.updateCameraPosition(true, deltaTime);
+    if (rotateBool) this.updateCameraPosition(true);
   }
 
-  updateCameraPosition(isLerp: boolean, deltaTime: number) {
+  updateCameraPosition(isLerp: boolean) {
     // Smoothly interpolate the camera target position
     const playerPos = new THREE.Vector3(
       this.player.position.x,
@@ -222,7 +221,10 @@ export class MobileController {
     const currentPos = this.camera.position.clone(); // Start from the camera's current position
 
     if (isLerp) {
-      currentPos.lerp(this.cameraTargetPosition, 1 - Math.pow(0.01, deltaTime));
+      currentPos.lerp(
+        this.cameraTargetPosition,
+        1 - Math.pow(0.01, game.deltaTime)
+      );
       if (
         Math.abs(currentPos.x - this.cameraTargetPosition.x) < 0.001 &&
         Math.abs(currentPos.y - this.cameraTargetPosition.y) < 0.001 &&
@@ -260,10 +262,10 @@ export class MobileController {
     );
   }
 
-  rotateTowardsTarget(socket: WebSocket, deltaTime: number) {
+  rotateTowardsTarget(socket: WebSocket) {
     this.player.rotation.slerp(
       this.targetRotation,
-      1 - Math.pow(0.001, deltaTime)
+      1 - Math.pow(0.001, game.deltaTime)
     );
 
     if (this.player.rotation.angleTo(this.targetRotation) < 0.001) {
@@ -290,8 +292,8 @@ export class MobileController {
     );
   }
 
-  fallingPossibility(socket: WebSocket, deltaTime: number) {
-    const fallSpeed = 10 * deltaTime; // Scale falling speed by deltaTime
+  fallingPossibility(socket: WebSocket) {
+    const fallSpeed = 10 * game.deltaTime; // Scale falling speed by deltaTime
 
     if (
       this.player.mesh.position.y > 0 &&
