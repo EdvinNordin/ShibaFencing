@@ -13,9 +13,39 @@
     </div>
 
     <div id="rotateZone"></div>
-    <div id="joystickZone"></div>
-    <div id="swingButton"><img src="swing.png" /></div>
+
+    <div id="mobileControls">
+      <div id="joystickZone"></div>
+      <div id="swingButton"><img src="swing.png" /></div>
+    </div>
+
     <img src="fullscreen.svg" id="fullscreenButton" />
+
+    <div id="startScreen">
+      <h1>Welcome to Shiba Fencing</h1>
+      <p>Enter your name to start playing!</p>
+      <form id="startGameForm">
+        <div id="inputContainer">
+          <input
+            type="text"
+            id="playerNameInput"
+            placeholder="Enter your name"
+            required
+          />
+          <button type="submit" id="startGameButton">Start Game</button>
+        </div>
+      </form>
+    </div>
+    <!--
+    <div id="startScreen">
+      <h1>Welcome to Shiba Fencing</h1>
+      <p>Enter your name to start playing!</p>
+      <div id="inputContainer">
+        <input type="text" id="playerNameInput" placeholder="Enter your name" />
+        <button id="startGameButton">Start Game</button>
+      </div>
+    </div>
+  -->
     <!--<div id="server"><h1>Please wait a little for the backend server to start up.</h1></div>
     <div id="sound">🔇</div>
     <div id="music">▶️</div>

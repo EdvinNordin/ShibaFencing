@@ -26,8 +26,13 @@
   border: 1px solid rgb(37, 37, 37) !important;
 }
 
+#mobileControls {
+  display: none;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
 #swingButton {
-  display: none; /* This will override the JavaScript */
   position: absolute;
   bottom: 15%;
   right: 5%;
@@ -81,4 +86,52 @@
   right: 0%;
   height: 8%;
   z-index: 100;
+}
+
+#playerNameInput {
+  position: block;
+  width: 200px;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  margin-right: 5px;
+}
+
+#startGameButton {
+  position: block;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background-color: #f0f0f0;
+  cursor: pointer;
+}
+#startGameButton:hover {
+  background-color: #e0e0e0;
+}
+
+#startScreen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+  color: white;
+  text-shadow: -1px -1px 0 rgb(50, 50, 50), 1px -1px 0 rgb(50, 50, 50),
+    -1px 1px 0 rgb(50, 50, 50), 1px 1px 0 rgb(50, 50, 50);
+}
+
+#inputContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
 }

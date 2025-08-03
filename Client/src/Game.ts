@@ -4,6 +4,7 @@ import { Player } from "./Player";
 import { Controller } from "./Controller";
 import { MobileController } from "./Mobile";
 import { isMobile } from "./main";
+import { initializeWebSocket } from "./Network";
 
 export class Game {
   scene: THREE.Scene;
@@ -14,11 +15,10 @@ export class Game {
   controller: Controller | MobileController;
   player: Player;
   deltaTime: number = 0;
+  socket: WebSocket;
 
   constructor() {
     this.scene = new THREE.Scene();
-    //const texture = new THREE.TextureLoader().load( "Haze.png" );
-    //this.scene.background = texture; // Set a background texture
     this.scene.background = new THREE.Color(0xd2f3d7);
 
     let gravity = { x: 0.0, y: -9.81, z: 0.0 };
@@ -52,6 +52,8 @@ export class Game {
     } else {
       this.controller = new Controller(this.player, this.world, this.camera);
     }
+
+    this.socket = initializeWebSocket();
   }
 
   updateDeltaTime(deltaTime: number) {
@@ -75,6 +77,15 @@ export class Game {
 
   getPlayerCount(): number {
     return this.players.size;
+  }
+
+  initializePlayer(name: string, socket: WebSocket) {
+    socket.send(
+      JSON.stringify({
+        action: "Initialize Player",
+        name: name,
+      })
+    );
   }
 
   printPlayers() {

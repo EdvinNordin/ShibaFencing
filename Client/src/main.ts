@@ -2,13 +2,51 @@ import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Game } from "./Game";
 import { loadModel, loadWeapon } from "./Loader";
-import { initializeWebSocket } from "./Network";
 
 export let game: Game;
 export let weapon: THREE.Object3D;
 export let model: THREE.Object3D;
 
 export const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+document.addEventListener("DOMContentLoaded", () => {
+  const startGameForm = document.getElementById("startGameForm");
+
+  if (startGameForm) {
+    startGameForm.addEventListener("submit", (event) => {
+      event.preventDefault(); // Prevent the default form submission behavior
+      const playerNameInput = document.getElementById(
+        "playerNameInput"
+      ) as HTMLInputElement;
+
+      if (playerNameInput) {
+        const playerName = playerNameInput.value.trim();
+        if (playerName) {
+          if (game) {
+            game.player.name = playerName; // Set the player's name
+            game.player.createNameTag(playerName); // Create the name tag for the player
+            game.player.respawn();
+
+            game.initializePlayer(playerName, game.socket);
+          }
+
+          // Hide the input UI
+          const startScreen = document.getElementById("startScreen");
+          if (startScreen) {
+            startScreen.style.display = "none";
+          }
+
+          if (isMobile) {
+            const mobileControls = document.getElementById("mobileControls");
+            if (mobileControls) {
+              mobileControls.style.display = "block"; // Show mobile controls
+            }
+          }
+        }
+      }
+    });
+  }
+});
 
 async function init() {
   await RAPIER.init();
@@ -54,15 +92,17 @@ async function init() {
     game.renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  const socket = initializeWebSocket();
+  //const socket = initializeWebSocket();
+
   let clock = new THREE.Clock();
   let deltaTime = 0;
+
   function update() {
     deltaTime = clock.getDelta();
     deltaTime = Math.min(deltaTime, 0.1);
     //debugRenderer.update();
     game.updateDeltaTime(deltaTime);
-    game.controller.updateController(socket);
+    game.controller.updateController(game.socket);
     game.world.step();
     game.renderer.render(game.scene, game.camera);
   }

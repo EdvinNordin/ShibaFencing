@@ -64,7 +64,6 @@ export class MobileController {
     }
 
     if (swingButton) {
-      swingButton.style.setProperty("display", "block");
       swingButton.addEventListener("touchstart", (e) => {
         if (this.player.isAttacking) return;
         attackReady = true;

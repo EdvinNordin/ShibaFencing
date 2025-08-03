@@ -8,10 +8,10 @@ let hp = document.getElementById("currentHP");
 
 export function initializeWebSocket() {
   const socket = new WebSocket(import.meta.env.VITE_BACKEND_URL);
-  // Handle incoming events
+
   socket.onmessage = (event) => {
-    // The server sends JSON, so parse it
     const data = JSON.parse(event.data);
+
     switch (data.action) {
       case "Set ID":
         game.player.ID = data.ID;
@@ -19,8 +19,17 @@ export function initializeWebSocket() {
 
       case "Send Old Players":
         data.players.forEach((playerData: any) => {
+          if (game.player.ID === playerData.ID) return;
+
           let newPlayer = new Player(game.world);
+          if (playerData.alive) {
+            newPlayer.mesh.visible = true; // Show player mesh if alive
+          } else {
+            newPlayer.mesh.visible = false; // Hide player mesh if not alive
+          }
           newPlayer.ID = playerData.ID;
+          newPlayer.name = playerData.name; // Set player name
+          newPlayer.createNameTag(playerData.name);
           newPlayer.health = playerData.health;
           newPlayer.updatePosition(playerData.position);
           newPlayer.updateRotation(playerData.rotation);
@@ -31,10 +40,14 @@ export function initializeWebSocket() {
       case "New Player":
         let newPlayer = new Player(game.world);
         newPlayer.ID = data.ID;
+        newPlayer.name = data.name;
+        newPlayer.mesh.visible = true;
+        newPlayer.createNameTag(data.name);
         game.addPlayer(newPlayer);
         break;
 
       case "Player Move":
+        console.log("Player Move", data.name);
         const movePlayer = game.findPlayer(data.ID);
         if (movePlayer) {
           movePlayer.updatePosition(data.position);

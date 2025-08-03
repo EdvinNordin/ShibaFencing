@@ -36,7 +36,7 @@ export class Controller {
     if (this.input.isPressed(" ") && !this.player.isAttacking)
       this.attack(socket);
 
-    this.fallingPossibility(socket);
+    if (this.player.alive) this.fallingPossibility(socket);
 
     const globalPosition = new THREE.Vector3();
     this.player.weapon.mesh.getWorldPosition(globalPosition);
@@ -111,9 +111,9 @@ export class Controller {
     let rotateBool = false;
     const rotationSpeed = game.deltaTime; // Scale rotation speed by deltaTime
 
-    if (input.isPressed("ArrowLeft") || input.isPressed("j"))
+    if (input.isPressed("ArrowLeft"))
       (this.camera.userData.orbitAngle += rotationSpeed), (rotateBool = true);
-    if (input.isPressed("ArrowRight") || input.isPressed("l"))
+    if (input.isPressed("ArrowRight"))
       (this.camera.userData.orbitAngle -= rotationSpeed), (rotateBool = true);
     if (this.camera.userData.orbitAngle === undefined)
       this.camera.userData.orbitAngle = 0;

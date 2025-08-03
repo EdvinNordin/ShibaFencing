@@ -49,9 +49,9 @@ export class Weapon {
 
     let colliderDesc = RAPIER.ColliderDesc.cuboid(
       size.x / 8,
-      size.y / 2,
+      size.y / 4,
       size.z / 2
-    ).setTranslation(0, -0.55, 0);
+    ).setTranslation(0, -1, 0);
 
     this.rigidBody.setNextKinematicRotation(this.originalRotation);
 
@@ -104,56 +104,34 @@ export class Weapon {
   }
 
   checkCollision(socket: WebSocket) {
-    game.players.forEach((player) => {
-      if (player === game.player || player.gotHit) return;
-      const contact = this.collider.contactCollider(player.weapon.collider, 0);
-      if (player.isAttacking && contact) {
-        const contactPoint = contact.point1;
-        this.Parry(contactPoint, player, socket);
-      } else if (this.collider.contactCollider(player.collider, 0)) {
-        player.gotHit = true;
-        socket.send(
-          JSON.stringify({
-            action: "Player Hit",
-            hitID: player.ID,
-            damage: this.damage,
-          })
+    game.players.forEach((opponent) => {
+      // Skip the player who is swinging or if the player got hit
+      if (opponent !== game.player && !opponent.gotHit) {
+        const bodyContact = this.collider.contactCollider(opponent.collider, 0);
+        const weaponContact = this.collider.contactCollider(
+          opponent.weapon.collider,
+          0
         );
+        // If the weapon collider contacts the opponent's weapon
+        if (weaponContact) {
+          const contactPoint = weaponContact.point1;
+          this.Parry(contactPoint, opponent, socket);
+          this.owner.isAttacking = false;
+          return; // Exit after parrying
+
+          // If the weapon collider contacts the opponent's body
+        } else if (bodyContact) {
+          opponent.gotHit = true;
+          socket.send(
+            JSON.stringify({
+              action: "Player Hit",
+              hitID: opponent.ID,
+              damage: this.damage,
+            })
+          );
+        }
       }
     });
-  }
-
-  knockback(player: Player, socket: WebSocket) {
-    // Apply knockback effect to the attacked player
-    const attackerForward = new THREE.Vector3(0, 0, 1).applyQuaternion(
-      player.rotation
-    ); // Get attacker's forward direction
-    attackerForward.normalize(); // Ensure it's a unit vector
-
-    // Apply knockback force in the attacker's forward direction
-    const knockbackForce = 3.0; // Adjust this value as needed
-    const knockbackVector = attackerForward.multiplyScalar(knockbackForce);
-
-    // Update the player's position with the knockback effect
-    const newPosition = new THREE.Vector3(
-      this.owner.position.x + knockbackVector.x,
-      this.owner.position.y + knockbackVector.y,
-      this.owner.position.z + knockbackVector.z
-    );
-    this.owner.updatePosition(
-      new RAPIER.Vector3(newPosition.x, newPosition.y, newPosition.z)
-    );
-
-    socket.send(
-      JSON.stringify({
-        action: "Player Move",
-        position: {
-          x: this.owner.position.x,
-          y: this.owner.position.y,
-          z: this.owner.position.z,
-        },
-      })
-    );
   }
 
   updateRotation(rotation: THREE.Quaternion) {
@@ -180,11 +158,49 @@ export class Weapon {
     this.swingRotation.copy(temp);
   }
 
-  Parry(contactPoint: RAPIER.Vector, player: Player, socket: WebSocket) {
+  Parry(contactPoint: RAPIER.Vector, opponent: Player, socket: WebSocket) {
     this.Spark(contactPoint);
-    player.gotHit = true;
+    opponent.gotHit = true;
     this.Reset();
-    this.knockback(player, socket);
+
+    const playerKnockback = this.calcDirection(this.owner, opponent);
+    const opponentKnockback = this.calcDirection(opponent, this.owner);
+    this.Knockback(opponent, opponentKnockback, socket);
+    opponent.weapon.Knockback(this.owner, playerKnockback, socket);
+  }
+
+  Knockback(player: Player, direction: THREE.Vector3, socket: WebSocket) {
+    const KnockbackForce = 3.0; // Adjust this value as needed
+    const KnockbackVector = direction.multiplyScalar(KnockbackForce);
+
+    // Update the player's position with the Knockback effect
+    const newPosition = new THREE.Vector3(
+      this.owner.position.x + KnockbackVector.x,
+      this.owner.position.y + KnockbackVector.y,
+      this.owner.position.z + KnockbackVector.z
+    );
+    this.owner.updatePosition(
+      new RAPIER.Vector3(newPosition.x, newPosition.y, newPosition.z)
+    );
+
+    socket.send(
+      JSON.stringify({
+        action: "Player Knockback",
+        knockbackPosition: this.owner.ID,
+        position: {
+          x: this.owner.position.x,
+          y: this.owner.position.y,
+          z: this.owner.position.z,
+        },
+      })
+    );
+  }
+
+  calcDirection(attacker: Player, opponent: Player) {
+    const direction = new THREE.Vector3();
+    direction.subVectors(opponent.position, attacker.position);
+    direction.normalize();
+    return direction;
   }
 
   Spark(contactPoint: RAPIER.Vector) {
