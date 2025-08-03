@@ -249,8 +249,8 @@ export class MobileController {
   }
 
   offsetCalc(vec: THREE.Vector3): THREE.Vector3 {
-    const radius = 10;
-    const height = 5;
+    const radius = 6;
+    const height = 3;
     const angle = this.camera.userData.orbitAngle;
 
     // Calculate the target position based on the camera's orbit
