@@ -47,7 +47,6 @@ export function initializeWebSocket() {
         break;
 
       case "Player Move":
-        console.log("Player Move", data.name);
         const movePlayer = game.findPlayer(data.ID);
         if (movePlayer) {
           movePlayer.updatePosition(data.position);
