@@ -79,11 +79,12 @@ export class Game {
     return this.players.size;
   }
 
-  initializePlayer(name: string, socket: WebSocket) {
+  initializePlayer(name: string, color: string, socket: WebSocket) {
     socket.send(
       JSON.stringify({
         action: "Initialize Player",
         name: name,
+        color: color,
       })
     );
   }

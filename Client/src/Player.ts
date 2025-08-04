@@ -21,13 +21,17 @@ export class Player {
   movable: boolean = false; // Flag to control movement
   alive: boolean = false; // Flag to check if player is alive
   gotHit: boolean = false; // Flag to check if player got hit
+  color: string;
 
-  constructor(world: RAPIER.World) {
+  constructor(world: RAPIER.World, color: string = "#ff0000") {
     id++;
     this.ID = id.toString();
     this.name = this.ID;
 
     this.mesh = model.clone();
+    this.color = color;
+    this.setColor(this.color);
+
     this.mesh.visible = false;
     this.mesh.position.y = -20;
     const box = new THREE.Box3().setFromObject(this.mesh); // Compute the bounding box
@@ -147,5 +151,19 @@ export class Player {
     sprite.scale.set(message.length * 0.25, 0.5, 1); // Adjust as needed
     sprite.position.set(0, 1.3, 0); // Position above the player
     this.mesh.add(sprite);
+  }
+
+  setColor(color: string) {
+    this.color = color;
+    this.mesh.traverse((child) => {
+      if (
+        child.name === "Group18985_default_0" &&
+        child instanceof THREE.Mesh
+      ) {
+        child.material = new THREE.MeshBasicMaterial({
+          color: this.color,
+        });
+      }
+    });
   }
 }

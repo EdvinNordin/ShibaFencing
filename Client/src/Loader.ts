@@ -18,6 +18,7 @@ export function loadModel(): Promise<THREE.Object3D> {
           child.receiveShadow = true; // Enable shadow receiving for the mesh
         }
       });
+
       resolve(pivot);
     });
   });

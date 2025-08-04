@@ -21,7 +21,7 @@ export function initializeWebSocket() {
         data.players.forEach((playerData: any) => {
           if (game.player.ID === playerData.ID) return;
 
-          let newPlayer = new Player(game.world);
+          let newPlayer = new Player(game.world, playerData.color);
           if (playerData.alive) {
             newPlayer.mesh.visible = true; // Show player mesh if alive
           } else {
@@ -38,7 +38,7 @@ export function initializeWebSocket() {
         break;
 
       case "New Player":
-        let newPlayer = new Player(game.world);
+        let newPlayer = new Player(game.world, data.color);
         newPlayer.ID = data.ID;
         newPlayer.name = data.name;
         newPlayer.mesh.visible = true;

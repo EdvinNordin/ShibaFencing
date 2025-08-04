@@ -11,6 +11,7 @@ export const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 document.addEventListener("DOMContentLoaded", () => {
   const startGameForm = document.getElementById("startGameForm");
+  const colorInput = document.getElementById("favcolor") as HTMLInputElement;
 
   if (startGameForm) {
     startGameForm.addEventListener("submit", (event) => {
@@ -26,8 +27,9 @@ document.addEventListener("DOMContentLoaded", () => {
             game.player.name = playerName; // Set the player's name
             game.player.createNameTag(playerName); // Create the name tag for the player
             game.player.respawn();
-
-            game.initializePlayer(playerName, game.socket);
+            const color = colorInput.value;
+            game.player.setColor(color);
+            game.initializePlayer(playerName, color, game.socket);
           }
 
           // Hide the input UI

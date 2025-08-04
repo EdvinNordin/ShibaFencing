@@ -40,7 +40,8 @@ websocketServer.Start(connection =>
                         rotation = PlayerState.SerializeQuaternion(p.Value.state.rotation),
                         health = p.Value.state.health,
                         name = p.Value.state.name,
-                        alive = p.Value.state.alive
+                        alive = p.Value.state.alive,
+                        color = p.Value.state.color
                     }).ToList()
                 };
                 connection.Send(JsonSerializer.Serialize(sendOldPlayers));
@@ -80,16 +81,18 @@ websocketServer.Start(connection =>
                 case "Initialize Player":
 
                     var playerName = doc.RootElement.GetProperty("name").GetString();
-                    
+                    var color = doc.RootElement.GetProperty("color").GetString();
                     socketPlayer.name = playerName;
-                    socketPlayer.alive = true; 
-                    
+                    socketPlayer.alive = true;
+                    socketPlayer.color = color;
+
                     // Notify all other players about the new player
                     var newPlayer = new
                     {
                         action = "New Player",
                         ID = socketID,
-                        name = socketPlayer.name
+                        name = socketPlayer.name,
+                        color = socketPlayer.color
                     };
                 
                     foreach (var player in Players)
@@ -268,6 +271,7 @@ class PlayerState
     public int health { get; set; }
     public int damage { get; set; } = 20;
     public bool alive { get; set; } = false;
+    public string color { get; set; } = "#ff0000"; 
     
 
     public PlayerState()
