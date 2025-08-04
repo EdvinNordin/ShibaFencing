@@ -10,6 +10,7 @@ const rotateZone = document.getElementById("rotateZone");
 const swingButton = document.getElementById("swingButton");
 const fullscreenButton = document.getElementById("fullscreenButton");
 const rotateScreenIcon = document.getElementById("rotateScreenIcon");
+const instructions = document.getElementById("instructions");
 let attackReady = false;
 
 export class MobileController {
@@ -79,6 +80,10 @@ export class MobileController {
           screenfull.toggle();
         }
       });
+    }
+
+    if (instructions) {
+      instructions.style.display = "none";
     }
 
     const portrait = window.matchMedia("(orientation: portrait)").matches;

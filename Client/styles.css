@@ -104,6 +104,17 @@
   text-shadow: -1px -1px 0 rgb(50, 50, 50), 1px -1px 0 rgb(50, 50, 50),
     -1px 1px 0 rgb(50, 50, 50), 1px 1px 0 rgb(50, 50, 50);
 }
+#instructions {
+  font-size: 18px;
+  top: 3%;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  color: rgb(50, 50, 50);
+  text-shadow: none;
+  z-index: 100;
+}
 #startGameForm {
   display: flex;
   flex-direction: column;
