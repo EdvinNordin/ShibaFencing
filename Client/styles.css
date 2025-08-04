@@ -9,15 +9,6 @@
   width: 100vw;
 }
 
-#joystickZone {
-  z-index: 100;
-  position: absolute;
-  bottom: 20%;
-  left: 5%;
-  width: 100px;
-  height: 100px;
-}
-
 .front {
   opacity: 1 !important;
 }
@@ -32,9 +23,17 @@
   width: 100%;
   height: 100%;
 }
-#swingButton {
+#joystickZone {
+  z-index: 100;
   position: absolute;
   bottom: 20%;
+  left: 5%;
+  width: 100px;
+  height: 100px;
+}
+#swingButton {
+  position: absolute;
+  bottom: 22%;
   right: 5%;
   height: 75px;
   width: 75px;
