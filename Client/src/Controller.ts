@@ -10,6 +10,7 @@ export class Controller {
   input: InputManager;
   targetRotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
   cameraTargetPosition: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+  updatePosition: boolean = false;
 
   constructor(
     player: Player,
@@ -21,9 +22,9 @@ export class Controller {
     this.camera = camera;
     this.input = new InputManager();
   }
-  number = 0;
 
   updateController(socket: WebSocket) {
+    this.updatePosition = false;
     this.updateCameraOrbit(this.input);
 
     this.updateCameraPosition(true);
@@ -38,11 +39,17 @@ export class Controller {
 
     if (this.player.alive) this.fallingPossibility(socket);
 
-    const globalPosition = new THREE.Vector3();
-    this.player.weapon.mesh.getWorldPosition(globalPosition);
-    this.player.weapon.rigidBody.setNextKinematicTranslation(
-      new RAPIER.Vector3(globalPosition.x, globalPosition.y, globalPosition.z)
-    );
+    if (this.updatePosition) {
+      this.player.updatePosition(this.player.position);
+    }
+    /* 
+    if (
+      this.player.position.y < 0 &&
+      (Math.abs(this.player.position.x) < 10 ||
+        Math.abs(this.player.position.z) < 10)
+    ) {
+      console.log("NOOOOOO");
+    } */
   }
 
   move(socket: WebSocket) {
@@ -75,7 +82,9 @@ export class Controller {
 
       this.cameraTargetPosition.copy(this.offsetCalc(nextPos3));
 
-      this.player.updatePosition(nextPos);
+      //this.player.updatePosition(nextPos);
+      this.player.position = nextPos;
+      this.updatePosition = true;
 
       const from = new THREE.Vector3(0, 0, 1); // forward
       const to = threeDirection.clone().normalize();
@@ -166,7 +175,7 @@ export class Controller {
     // Ensure the camera is always looking at the target position
     this.camera.lookAt(
       this.player.position.x - offset.x,
-      this.player.position.y - offset.y,
+      0,
       this.player.position.z - offset.z
     );
   }
@@ -179,7 +188,7 @@ export class Controller {
     // Calculate the target position based on the camera's orbit
     return new THREE.Vector3(
       vec.x + radius * Math.sin(angle),
-      vec.y + height,
+      height,
       vec.z + radius * Math.cos(angle)
     );
   }
@@ -212,25 +221,23 @@ export class Controller {
   fallingPossibility(socket: WebSocket) {
     const fallSpeed = 10 * game.deltaTime; // Scale falling speed by deltaTime
 
-    if (
-      this.player.mesh.position.y > 0 &&
-      socket.readyState === WebSocket.OPEN
-    ) {
-      this.player.mesh.position.y -= fallSpeed;
+    if (this.player.position.y > 0) {
+      this.player.position.y -= fallSpeed;
       this.player.movable = false;
+      this.updatePosition = true;
       socket.send(
         JSON.stringify({
           action: "Player Move",
           position: {
-            x: this.player.mesh.position.x,
-            y: this.player.mesh.position.y,
-            z: this.player.mesh.position.z,
+            x: this.player.position.x,
+            y: this.player.position.y,
+            z: this.player.position.z,
           },
         })
       );
     }
 
-    if (this.player.mesh.position.y < -20) {
+    if (this.player.position.y < -20) {
       socket.send(
         JSON.stringify({
           action: "Player Death",
@@ -252,20 +259,22 @@ export class Controller {
     ) {
       this.player.alive;
       this.player.movable = false;
-      this.player.mesh.position.y -= fallSpeed;
+      this.player.position.y -= fallSpeed;
+      this.updatePosition = true;
       socket.send(
         JSON.stringify({
           action: "Player Move",
           position: {
-            x: this.player.mesh.position.x,
-            y: this.player.mesh.position.y,
-            z: this.player.mesh.position.z,
+            x: this.player.position.x,
+            y: this.player.position.y,
+            z: this.player.position.z,
           },
         })
       );
-    } else if (this.player.mesh.position.y < 0.1 && this.player.health > 0) {
-      this.player.mesh.position.y = 0; // Reset height to 0 if close enough
+    } else if (this.player.position.y < 0.1 && this.player.health > 0) {
+      this.player.position.y = 0; // Reset height to 0 if close enough
       this.player.movable = true;
+      this.updatePosition = true;
     }
   }
 }

@@ -14,23 +14,30 @@ export function initializeWebSocket() {
 
     switch (data.action) {
       case "Set ID":
-        game.player.ID = data.ID;
+        game.playerID = data.ID;
         break;
 
       case "Send Old Players":
         data.players.forEach((playerData: any) => {
-          if (game.player.ID === playerData.ID) return;
-
-          let newPlayer = new Player(game.world, playerData.color);
+          if (playerData.initialized === false) return;
+          //if (game.playerID === playerData.ID) return;
+          let newPlayer = new Player(
+            game.world,
+            playerData.name,
+            playerData.color
+          );
           if (playerData.alive) {
             newPlayer.mesh.visible = true; // Show player mesh if alive
           } else {
             newPlayer.mesh.visible = false; // Hide player mesh if not alive
           }
           newPlayer.ID = playerData.ID;
-          newPlayer.name = playerData.name; // Set player name
-          newPlayer.createNameTag(playerData.name);
           newPlayer.health = playerData.health;
+          newPlayer.weapon.side = playerData.side;
+          newPlayer.weapon.updateRotation(
+            newPlayer.weapon.sideToQuaternion(playerData.side)
+          );
+
           newPlayer.updatePosition(playerData.position);
           newPlayer.updateRotation(playerData.rotation);
           game.addPlayer(newPlayer);
@@ -38,11 +45,8 @@ export function initializeWebSocket() {
         break;
 
       case "New Player":
-        let newPlayer = new Player(game.world, data.color);
+        let newPlayer = new Player(game.world, data.name, data.color);
         newPlayer.ID = data.ID;
-        newPlayer.name = data.name;
-        newPlayer.mesh.visible = true;
-        newPlayer.createNameTag(data.name);
         game.addPlayer(newPlayer);
         break;
 
@@ -68,65 +72,17 @@ export function initializeWebSocket() {
         }
         break;
 
-      case "Player Hit":
-        const attackerPlayer = game.findPlayer(data.attackerID);
-        if (!attackerPlayer) return; // Ensure attacker exists
-
-        // Apply knockback effect to the attacked player
-        const attackerForward = new THREE.Vector3(0, 0, 1).applyQuaternion(
-          attackerPlayer.rotation
-        ); // Get attacker's forward direction
-        attackerForward.normalize(); // Ensure it's a unit vector
-
-        // Apply knockback force in the attacker's forward direction
-        const knockbackForce = 3.0; // Adjust this value as needed
-        const knockbackVector = attackerForward.multiplyScalar(knockbackForce);
-
-        // Update the player's position with the knockback effect
-        const newPosition = new THREE.Vector3(
-          game.player.position.x + knockbackVector.x,
-          game.player.position.y + knockbackVector.y,
-          game.player.position.z + knockbackVector.z
+      case "Parry Impact":
+        const attacker = game.findPlayer(data.attackerID);
+        const defender = game.findPlayer(data.defenderID);
+        game.Spark(
+          new RAPIER.Vector3(data.impact.x, data.impact.y, data.impact.z)
         );
-        game.player.updatePosition(
-          new RAPIER.Vector3(newPosition.x, newPosition.y, newPosition.z)
-        );
-
-        socket.send(
-          JSON.stringify({
-            action: "Player Move",
-            position: {
-              x: game.player.position.x,
-              y: game.player.position.y,
-              z: game.player.position.z,
-            },
-          })
-        );
-
-        game.player.health = data.health;
-        updateHealthBar();
-
-        // Check if this kills the player
-        if (game.player.health <= 0) {
-          socket.send(
-            JSON.stringify({
-              action: "Player Death",
-            })
-          );
-          game.player.mesh.visible = false; // Hide player mesh if health is 0
-          setTimeout(() => {
-            socket.send(
-              JSON.stringify({
-                action: "Player Respawn",
-              })
-            );
-            game.player.health = 100;
-            updateHealthBar();
-            game.player.updatePosition(new RAPIER.Vector3(0, 0, 0)); // Reset position
-            game.player.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
-            game.player.mesh.position.y = 10; // Reset height
-            game.player.mesh.visible = true;
-          }, 3000); // Respawn after 2 seconds
+        if (attacker && defender) {
+          const knockbackPosition = defender.weapon.KnockbackCalc(attacker);
+          defender.updatePosition(knockbackPosition);
+          ///attacker.isAttacking = false;
+          //attacker.weapon.Reset();
         }
 
         break;
@@ -161,6 +117,76 @@ export function initializeWebSocket() {
         console.error("Server Error:", data.message, "In: ", data.problem);
         break;
     }
+
+    if (game.player && game.player.ID !== null) {
+      switch (data.action) {
+        case "Player Hit":
+          const attackerPlayer = game.findPlayer(data.attackerID);
+          if (!attackerPlayer) return; // Ensure attacker exists
+
+          // Apply knockback effect to the attacked player
+          const attackerForward = new THREE.Vector3(0, 0, 1).applyQuaternion(
+            attackerPlayer.rotation
+          ); // Get attacker's forward direction
+          attackerForward.normalize(); // Ensure it's a unit vector
+
+          // Apply knockback force in the attacker's forward direction
+          const knockbackForce = 3.0; // Adjust this value as needed
+          const knockbackVector =
+            attackerForward.multiplyScalar(knockbackForce);
+
+          // Update the player's position with the knockback effect
+          const newPosition = new THREE.Vector3(
+            game.player.position.x + knockbackVector.x,
+            game.player.position.y + knockbackVector.y,
+            game.player.position.z + knockbackVector.z
+          );
+          game.player.updatePosition(
+            new RAPIER.Vector3(newPosition.x, newPosition.y, newPosition.z)
+          );
+
+          socket.send(
+            JSON.stringify({
+              action: "Player Move",
+              position: {
+                x: game.player.position.x,
+                y: game.player.position.y,
+                z: game.player.position.z,
+              },
+            })
+          );
+
+          game.player.health = data.health;
+          updateHealthBar();
+
+          // Check if this kills the player
+          if (game.player.health <= 0) {
+            socket.send(
+              JSON.stringify({
+                action: "Player Death",
+              })
+            );
+            game.player.mesh.visible = false; // Hide player mesh if health is 0
+            setTimeout(() => {
+              socket.send(
+                JSON.stringify({
+                  action: "Player Respawn",
+                })
+              );
+              if (game.player) {
+                game.player.health = 100;
+                updateHealthBar();
+                game.player.updatePosition(new RAPIER.Vector3(0, 0, 0)); // Reset position
+                game.player.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
+                game.player.mesh.position.y = 10; // Reset height
+                game.player.mesh.visible = true;
+              }
+            }, 3000);
+          }
+
+          break;
+      }
+    }
   };
 
   socket.onopen = () => {
@@ -177,6 +203,8 @@ export function initializeWebSocket() {
   return socket;
 }
 function updateHealthBar() {
+  if (!game.player) return;
+
   health.style.width = `${game.player.health}%`;
   health.style.backgroundColor =
     game.player.health > 50

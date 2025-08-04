@@ -8,7 +8,7 @@ export let weapon: THREE.Object3D;
 export let model: THREE.Object3D;
 
 export const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
+let gameStarted = false;
 document.addEventListener("DOMContentLoaded", () => {
   const startGameForm = document.getElementById("startGameForm");
   const colorInput = document.getElementById("favcolor") as HTMLInputElement;
@@ -24,24 +24,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const playerName = playerNameInput.value.trim();
         if (playerName) {
           if (game) {
-            game.player.name = playerName; // Set the player's name
-            game.player.createNameTag(playerName); // Create the name tag for the player
-            game.player.respawn();
             const color = colorInput.value;
-            game.player.setColor(color);
             game.initializePlayer(playerName, color, game.socket);
-          }
+            gameStarted = true; // Set the game started flag
 
-          // Hide the input UI
-          const startScreen = document.getElementById("startScreen");
-          if (startScreen) {
-            startScreen.style.display = "none";
-          }
+            // Hide the input UI
+            const startScreen = document.getElementById("startScreen");
+            if (startScreen) {
+              startScreen.style.display = "none";
+            }
 
-          if (isMobile) {
-            const mobileControls = document.getElementById("mobileControls");
-            if (mobileControls) {
-              mobileControls.style.display = "block"; // Show mobile controls
+            if (isMobile) {
+              const mobileControls = document.getElementById("mobileControls");
+              if (mobileControls) {
+                mobileControls.style.display = "block"; // Show mobile controls
+              }
             }
           }
         }
@@ -102,11 +99,13 @@ async function init() {
   function update() {
     deltaTime = clock.getDelta();
     deltaTime = Math.min(deltaTime, 0.1);
-    //debugRenderer.update();
     game.updateDeltaTime(deltaTime);
-    game.controller.updateController(game.socket);
+    if (gameStarted && game.controller)
+      game.controller.updateController(game.socket);
     game.world.step();
     game.renderer.render(game.scene, game.camera);
+
+    //debugRenderer.update();
   }
   game.renderer.setAnimationLoop(update);
 }

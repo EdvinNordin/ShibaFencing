@@ -11,7 +11,7 @@ export class Player {
   rigidBody: RAPIER.RigidBody;
   collider: RAPIER.Collider;
   offset: RAPIER.Vector3;
-  position: RAPIER.Vector3 = new RAPIER.Vector3(0, 0, 0);
+  position: RAPIER.Vector3 = new RAPIER.Vector3(0, 10, 0);
   rotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
   health: number = 100;
   speed: number = 7;
@@ -19,30 +19,31 @@ export class Player {
   weapon: Weapon;
   isAttacking: boolean = false;
   movable: boolean = false; // Flag to control movement
-  alive: boolean = false; // Flag to check if player is alive
+  alive: boolean = true; // Flag to check if player is alive
   gotHit: boolean = false; // Flag to check if player got hit
   color: string;
+  nameTag: THREE.Sprite | null = null;
+  hitCounter: number = 0; // Counter for hit detection
 
-  constructor(world: RAPIER.World, color: string = "#ff0000") {
+  constructor(world: RAPIER.World, name: string, color: string) {
     id++;
     this.ID = id.toString();
-    this.name = this.ID;
+    this.name = name;
 
     this.mesh = model.clone();
     this.color = color;
     this.setColor(this.color);
 
-    this.mesh.visible = false;
-    this.mesh.position.y = -20;
+    this.mesh.visible = true;
     const box = new THREE.Box3().setFromObject(this.mesh); // Compute the bounding box
     box.getSize(size);
 
     this.offset = new RAPIER.Vector3(size.x / 2, size.y / 2, size.z / 2);
 
-    this.mesh.position.set(this.position.x, 10, this.position.z);
-
     const rbDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
     this.rigidBody = world.createRigidBody(rbDesc);
+    this.rigidBody.setTranslation(this.position, true);
+    this.rigidBody.setRotation(this.rotation, true);
     let colliderDesc = RAPIER.ColliderDesc.cuboid(
       this.offset.x,
       this.offset.y,
@@ -54,9 +55,14 @@ export class Player {
     this.weapon = new Weapon(world, this);
     this.mesh.add(this.weapon.mesh);
     this.weapon.mesh.position.set(0, 0.4, 0.75);
+
+    this.createNameTag(this.name);
+
+    this.updatePosition(this.position);
   }
 
   updatePosition(position: RAPIER.Vector3) {
+    //console.log(this.name, "position", position);
     this.position = position;
     this.mesh.position.set(position.x, position.y, position.z);
     this.rigidBody.setNextKinematicTranslation(position);
@@ -83,9 +89,6 @@ export class Player {
     this.health = 0;
     this.mesh.visible = false; // Hide player mesh if health is 0
     this.movable = false; // Disable movement
-    this.updatePosition(new RAPIER.Vector3(0, 0, 0));
-    this.updateRotation(new THREE.Quaternion(0, 0, 0, 1)); // Reset rotation
-    this.mesh.position.y = -20; // Reset height
     this.updateHealthBar();
   }
 
@@ -93,9 +96,8 @@ export class Player {
     this.alive = true;
     this.health = 100;
     this.mesh.visible = true; // Show player mesh
-    this.updatePosition(new RAPIER.Vector3(0, 0, 0)); // Reset position
+    this.updatePosition(new RAPIER.Vector3(0, 10, 0)); // Reset position
     this.updateRotation(new THREE.Quaternion(0, 0, 0, 1)); // Reset rotation
-    this.mesh.position.y = 10; // Reset height
     this.updateHealthBar(); // Update health bar
   }
 
@@ -109,6 +111,10 @@ export class Player {
   }
 
   createNameTag(message: string) {
+    if (this.nameTag) {
+      this.mesh.remove(this.nameTag); // Remove existing name tag if it exists
+    }
+
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
     const fontSize = 48; // Font size in pixels
@@ -150,6 +156,7 @@ export class Player {
     // Adjust the sprite's scale and position
     sprite.scale.set(message.length * 0.25, 0.5, 1); // Adjust as needed
     sprite.position.set(0, 1.3, 0); // Position above the player
+    this.nameTag = sprite;
     this.mesh.add(sprite);
   }
 

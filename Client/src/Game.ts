@@ -5,6 +5,7 @@ import { Controller } from "./Controller";
 import { MobileController } from "./Mobile";
 import { isMobile } from "./main";
 import { initializeWebSocket } from "./Network";
+import { spark } from "./Loader";
 
 export class Game {
   scene: THREE.Scene;
@@ -12,10 +13,11 @@ export class Game {
   camera: THREE.PerspectiveCamera;
   renderer: THREE.WebGLRenderer;
   players: Map<string, Player>;
-  controller: Controller | MobileController;
-  player: Player;
+  controller: Controller | MobileController | null = null;
+  player: Player | null = null;
   deltaTime: number = 0;
   socket: WebSocket;
+  playerID: string | null = null;
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -40,18 +42,6 @@ export class Game {
     document.body.appendChild(this.renderer.domElement);
 
     this.players = new Map<string, Player>();
-    this.player = new Player(this.world);
-    this.addPlayer(this.player);
-
-    if (isMobile) {
-      this.controller = new MobileController(
-        this.player,
-        this.world,
-        this.camera
-      );
-    } else {
-      this.controller = new Controller(this.player, this.world, this.camera);
-    }
 
     this.socket = initializeWebSocket();
   }
@@ -68,6 +58,10 @@ export class Game {
   removePlayer(oldPlayer: Player) {
     this.scene.remove(oldPlayer.mesh);
     this.players.delete(oldPlayer.ID);
+    this.world.removeRigidBody(oldPlayer.weapon.rigidBody);
+    this.world.removeCollider(oldPlayer.weapon.collider, false);
+    this.world.removeRigidBody(oldPlayer.rigidBody);
+    this.world.removeCollider(oldPlayer.collider, false);
   }
 
   findPlayer(ID: string): Player | undefined {
@@ -79,7 +73,52 @@ export class Game {
     return this.players.size;
   }
 
+  Spark(contactPoint: RAPIER.Vector) {
+    if (contactPoint) {
+      const sparkInstance = spark.clone();
+
+      this.scene.add(sparkInstance);
+      sparkInstance.position.set(
+        contactPoint.x,
+        contactPoint.y,
+        contactPoint.z
+      );
+
+      let life = 1; // seconds
+      const dt: number = this.deltaTime; // Use the delta time from the game
+      const animate = (dt: number) => {
+        life -= dt;
+        sparkInstance.scale.setScalar(life * 2); // Scale the spark based on its life
+        sparkInstance.material.opacity = life;
+        if (life <= 0) {
+          this.scene.remove(sparkInstance);
+        } else {
+          requestAnimationFrame(() => animate(0.016)); // ~60fps
+        }
+      };
+      animate(0.016);
+    }
+  }
+
   initializePlayer(name: string, color: string, socket: WebSocket) {
+    this.player = new Player(this.world, name, color);
+    this.addPlayer(this.player);
+    this.player.createNameTag(name);
+    this.player.setColor(color);
+    if (this.playerID) {
+      this.player.ID = this.playerID;
+    }
+
+    if (isMobile) {
+      this.controller = new MobileController(
+        this.player,
+        this.world,
+        this.camera
+      );
+    } else {
+      this.controller = new Controller(this.player, this.world, this.camera);
+    }
+
     socket.send(
       JSON.stringify({
         action: "Initialize Player",
