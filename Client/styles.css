@@ -3,12 +3,6 @@
   margin: 0;
 }
 
-#rotateZone {
-  position: absolute;
-  height: 100vh;
-  width: 100vw;
-}
-
 .front {
   opacity: 1 !important;
 }
@@ -22,6 +16,12 @@
   position: absolute;
   width: 100%;
   height: 100%;
+}
+#rotateZone {
+  position: absolute;
+  height: 100vh;
+  width: 100vw;
+  z-index: 50;
 }
 #joystickZone {
   z-index: 100;
