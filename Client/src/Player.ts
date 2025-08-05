@@ -1,9 +1,7 @@
 import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Weapon } from "./Weapon";
-import { model } from "./main";
-import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
-let id = 0;
+import { model, game } from "./main";
 const size = new THREE.Vector3();
 export class Player {
   name: string;
@@ -25,9 +23,8 @@ export class Player {
   nameTag: THREE.Sprite | null = null;
   hitCounter: number = 0; // Counter for hit detection
 
-  constructor(world: RAPIER.World, name: string, color: string) {
-    id++;
-    this.ID = id.toString();
+  constructor(world: RAPIER.World, name: string, color: string, ID: string) {
+    this.ID = ID;
     this.name = name;
 
     this.mesh = model.clone();
@@ -90,6 +87,14 @@ export class Player {
     this.mesh.visible = false; // Hide player mesh if health is 0
     this.movable = false; // Disable movement
     this.updateHealthBar();
+    setTimeout(() => {
+      game.socket.send(
+        JSON.stringify({
+          action: "Player Respawn",
+        })
+      );
+      this.respawn();
+    }, 3000);
   }
 
   respawn() {
@@ -97,17 +102,19 @@ export class Player {
     this.health = 100;
     this.mesh.visible = true; // Show player mesh
     this.updatePosition(new RAPIER.Vector3(0, 10, 0)); // Reset position
-    this.updateRotation(new THREE.Quaternion(0, 0, 0, 1)); // Reset rotation
-    this.updateHealthBar(); // Update health bar
+    this.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
+    this.updateHealthBar();
   }
 
   updateHealthBar() {
-    let health = document.getElementById("hp") as HTMLDivElement;
-    let hp = document.getElementById("currentHP");
-    health.style.width = `${this.health}%`;
-    health.style.backgroundColor =
-      this.health > 50 ? "green" : this.health > 20 ? "orange" : "red";
-    hp!.innerText = `${this.health}%`;
+    if (this === game.player) {
+      let health = document.getElementById("hp") as HTMLDivElement;
+      let hp = document.getElementById("currentHP");
+      health.style.width = `${this.health}%`;
+      health.style.backgroundColor =
+        this.health > 50 ? "green" : this.health > 20 ? "orange" : "red";
+      hp!.innerText = `${this.health}%`;
+    }
   }
 
   createNameTag(message: string) {

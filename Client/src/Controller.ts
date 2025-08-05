@@ -35,7 +35,9 @@ export class Controller {
       this.rotateTowardsTarget(socket);
 
     if (this.input.isPressed(" ") && !this.player.isAttacking)
-      this.attack(socket);
+      this.startAttack(socket);
+
+    if (this.player.isAttacking) this.attacking(socket);
 
     if (this.player.alive) this.fallingPossibility(socket);
 
@@ -104,8 +106,7 @@ export class Controller {
     }
   }
 
-  attack(socket: WebSocket) {
-    this.player.isAttacking = true;
+  startAttack(socket: WebSocket) {
     socket.send(
       JSON.stringify({
         action: "Player Attack",
@@ -113,6 +114,10 @@ export class Controller {
         range: this.player.weapon.range,
       })
     );
+    this.player.weapon.Swing(socket);
+  }
+
+  attacking(socket: WebSocket) {
     this.player.weapon.Swing(socket);
   }
 
@@ -244,6 +249,7 @@ export class Controller {
         })
       );
       this.player.death();
+      this.player.updateHealthBar();
 
       setTimeout(() => {
         socket.send(
@@ -252,6 +258,7 @@ export class Controller {
           })
         );
         this.player.respawn();
+        this.player.updateHealthBar();
       }, 3000);
     } else if (
       Math.abs(this.player.position.x) > 11 ||
@@ -275,6 +282,16 @@ export class Controller {
       this.player.position.y = 0; // Reset height to 0 if close enough
       this.player.movable = true;
       this.updatePosition = true;
+      socket.send(
+        JSON.stringify({
+          action: "Player Move",
+          position: {
+            x: this.player.position.x,
+            y: this.player.position.y,
+            z: this.player.position.z,
+          },
+        })
+      );
     }
   }
 }

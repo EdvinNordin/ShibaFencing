@@ -18,7 +18,7 @@ enum Side {
     ); */
 
 export class Weapon {
-  damage: number;
+  damage: number = 10;
   mesh: THREE.Object3D;
   rigidBody: RAPIER.RigidBody;
   collider: RAPIER.Collider;
@@ -26,12 +26,11 @@ export class Weapon {
   rotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
   side: Side = Side.left;
   owner: Player;
+  startTime: number = 0;
 
   constructor(world: RAPIER.World, owner: Player) {
     this.owner = owner;
     const scaleFactor = 0.015; // Adjust the scale factor as needed
-    this.damage = 10; // Example damage value
-
     this.mesh = weapon.clone();
     this.mesh.scale.setScalar(scaleFactor);
 
@@ -66,38 +65,42 @@ export class Weapon {
 
   Swing(socket: WebSocket) {
     const duration = 0.5; // Duration of the swing in seconds
-    const startTime = performance.now();
+    if (!this.owner.isAttacking) {
+      this.startTime = performance.now();
+    }
+    let elapsed = this.animate(duration, socket);
+    if (elapsed >= duration) {
+      this.swapSide();
+      game.players.forEach((player) => {
+        if (player.gotHit) {
+          player.gotHit = false; // swapSide gotHit flag after processing
+        }
+      });
+      this.owner.isAttacking = false;
+    }
+  }
 
-    const animate = () => {
-      const elapsed = (performance.now() - startTime) / 1000;
-      const t = Math.min(elapsed / duration, 1);
+  animate(duration: number, socket: WebSocket) {
+    this.owner.isAttacking = true;
+    const elapsed = (performance.now() - this.startTime) / 1000;
+    const t = Math.min(elapsed / duration, 1);
 
-      const c1 = 1.70158;
-      const c3 = c1 + 1;
-      const easing = 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+    const c1 = 1.70158;
+    const c3 = c1 + 1;
+    const easing = 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 
-      this.rotation.slerpQuaternions(
-        this.sideToQuaternion(this.side),
-        this.sideToQuaternion(this.side * -1), //=== Side.left ? Side.right : Side.left),
-        easing
-      );
-      this.updateRotation(this.rotation);
+    this.rotation.slerpQuaternions(
+      this.sideToQuaternion(this.side),
+      this.sideToQuaternion(this.side * -1), //=== Side.left ? Side.right : Side.left),
+      easing
+    );
+    this.updateRotation(this.rotation);
+
+    if (this.owner === game.player) {
       this.checkCollision(socket);
+    }
 
-      if (t < 1 && this.owner.isAttacking) {
-        requestAnimationFrame(animate);
-      } else {
-        this.swapSide();
-        game.players.forEach((player) => {
-          if (player.gotHit) {
-            player.gotHit = false; // swapSide gotHit flag after processing
-          }
-        });
-        this.owner.isAttacking = false;
-      }
-    };
-
-    animate();
+    return elapsed;
   }
 
   checkCollision(socket: WebSocket) {
@@ -116,7 +119,7 @@ export class Weapon {
           opponent.gotHit = true;
 
           const contactPoint1 = weaponContact.point1;
-          const contactPoint2 = weaponContact.point2;
+          //const contactPoint2 = weaponContact.point2;
 
           this.weaponHit(contactPoint1, opponent, socket);
           this.swapSide();
@@ -131,7 +134,8 @@ export class Weapon {
           socket.send(
             JSON.stringify({
               action: "Player Hit",
-              hitID: opponent.ID,
+              attackerID: this.owner.ID,
+              defenderID: opponent.ID,
               damage: this.damage,
             })
           );
@@ -167,10 +171,15 @@ export class Weapon {
 
   weaponHit(contactPoint: RAPIER.Vector, opponent: Player, socket: WebSocket) {
     game.Spark(contactPoint);
-    const knockbackPosition = this.KnockbackCalc(opponent);
-    this.owner.updatePosition(knockbackPosition);
-    const opponentKnockbackPosition = opponent.weapon.KnockbackCalc(this.owner);
-    opponent.updatePosition(opponentKnockbackPosition);
+    if (this.owner === game.player) {
+      socket.send(
+        JSON.stringify({
+          action: "Player Parry",
+          attackerID: this.owner.ID,
+          defenderID: opponent.ID,
+        })
+      );
+    }
   }
 
   KnockbackCalc(opponent: Player) {

@@ -1,6 +1,7 @@
 using Fleck;
 using System.Numerics;
 using System.Text.Json;
+using System.Timers;
 
 
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8181";
@@ -50,7 +51,35 @@ websocketServer.Start(connection =>
                 connection.Send(JsonSerializer.Serialize(sendOldPlayers));
             }
 
-            
+            /*System.Timers.Timer messageTimer = new System.Timers.Timer(3000); // 300ms interval
+            messageTimer.Elapsed += (sender, e) =>
+            {
+                if (Players.Count > 0)
+            {
+                var syncPlayers = new
+                {
+                    action = "Sync Players",
+                    players = Players.Select(p =>
+                        new
+                        {
+                        ID = p.Key,
+                        position = PlayerState.SerializeVector3(p.Value.state.position),
+                        rotation = PlayerState.SerializeQuaternion(p.Value.state.rotation),
+                        health = p.Value.state.health,
+                        name = p.Value.state.name,
+                        alive = p.Value.state.alive,
+                        color = p.Value.state.color,
+                        initialized = p.Value.state.Initialized,
+                        side = p.Value.state.side
+                    }).ToList()
+            };
+
+                    connection.Send(JsonSerializer.Serialize(syncPlayers));
+                }
+            };
+            messageTimer.AutoReset = true; // Ensure the timer repeats
+            messageTimer.Start();
+            */
         };
 
     // player disconnects
@@ -78,7 +107,6 @@ websocketServer.Start(connection =>
         {
             var doc = JsonDocument.Parse(message);
             var action = doc.RootElement.GetProperty("action").GetString();
-
             switch (action)
             {
                 case "Initialize Player":
@@ -183,26 +211,62 @@ websocketServer.Start(connection =>
                
 
                 case "Player Hit":
-                    var hitID = doc.RootElement.GetProperty("hitID").GetGuid();
+
                     var damage = doc.RootElement.GetProperty("damage").GetInt32();
 
-                    var hitPlayer = Players[hitID];
+                    var attackingID = doc.RootElement.GetProperty("attackerID").GetGuid();
+                    var attacking = Players[attackingID];
+
+                    var hitPlayerID = doc.RootElement.GetProperty("defenderID").GetGuid();
+                    var hitPlayer = Players[hitPlayerID];
+
+                    var hitDirection = new Vector3(attacking.state.position.X-hitPlayer.state.position.X, 
+                                                               attacking.state.position.Y-hitPlayer.state.position.Y, 
+                                                               attacking.state.position.Z-hitPlayer.state.position.Z);
+
+                    hitDirection = Vector3.Normalize(hitDirection) * 3.0f; 
+
+
+                    hitPlayer.state.setPosition(hitPlayer.state.position.X - hitDirection.X,
+                                               hitPlayer.state.position.Y - hitDirection.Y,
+                                               hitPlayer.state.position.Z - hitDirection.Z);
+
                     hitPlayer.state.health -= damage; // Apply damage
+
+
+
                     if (hitPlayer.state.health <= 0)
                     {
                         hitPlayer.state.alive = false; // Player is dead
                         hitPlayer.state.health = 0; // Ensure health doesn't go below 0
-                    }
 
-                    var playerHit = new
+                        var healthZero = new
+                        {
+                            action = "Player Death",
+                            ID = hitPlayerID,
+                        };
+                        foreach (var player in Players)
+                        {
+                            player.Value.connection.Send(JsonSerializer.Serialize(healthZero));
+                        }
+                    }
+                    else
+                    {
+
+                        var playerHit = new
                         {
                             action = "Player Hit",
                             health = hitPlayer.state.health,
                             ID = hitPlayer.connection.ConnectionInfo.Id,
-                            attackerID = socketID
+                            position = PlayerState.SerializeVector3(hitPlayer.state.position),
+
                         };
 
-                    hitPlayer.connection.Send(JsonSerializer.Serialize(playerHit));
+                        foreach (var player in Players)
+                        {
+                            player.Value.connection.Send(JsonSerializer.Serialize(playerHit));
+                        }
+                    }
                     break;
 
                 case "Player Parry":
@@ -212,36 +276,39 @@ websocketServer.Start(connection =>
                     var defenderID = doc.RootElement.GetProperty("defenderID").GetGuid();
                     var defender = Players[defenderID];
 
-                    var knockbackPosition = doc.RootElement.GetProperty("knockbackPosition");
-                    var knockbackPosX = knockbackPosition.GetProperty("x").GetSingle();
-                    var knockbackPosY = knockbackPosition.GetProperty("y").GetSingle();
-                    var knockbackPosZ = knockbackPosition.GetProperty("z").GetSingle();
-                    defender.state.setPosition(knockbackPosX, knockbackPosY, knockbackPosZ);
+                    var knockbackDirection = new Vector3(attacker.state.position.X-defender.state.position.X, 
+                                                               attacker.state.position.Y-defender.state.position.Y, 
+                                                               attacker.state.position.Z-defender.state.position.Z);
 
-                    var impactPosition = doc.RootElement.GetProperty("impactPosition");
-                    var impactPosX = impactPosition.GetProperty("x").GetSingle();
-                    var impactPosY = impactPosition.GetProperty("y").GetSingle();
-                    var impactPosZ = impactPosition.GetProperty("z").GetSingle();
+                    knockbackDirection = Vector3.Normalize(knockbackDirection) * 3.0f;
 
-                    var playerKnockback = new
-                        {
-                            action = "Player Move",
-                            position = PlayerState.SerializeVector3(defender.state.position),
-                            ID = defenderID
-                        };
+                    attacker.state.setPosition(attacker.state.position.X + knockbackDirection.X,
+                                               attacker.state.position.Y + knockbackDirection.Y,
+                                               attacker.state.position.Z + knockbackDirection.Z);
 
-                        var parryImpact = new
-                        {
-                            action = "Parry Impact",
-                            impact = PlayerState.SerializeVector3(new Vector3(impactPosX, impactPosY, impactPosZ)),
-                            attackerID = attackerID,
-                            defenderID = defenderID
-                        };
+                    defender.state.setPosition(defender.state.position.X - knockbackDirection.X,
+                                               defender.state.position.Y - knockbackDirection.Y,
+                                               defender.state.position.Z - knockbackDirection.Z);
+
+                    var attackerKnockback = new
+                    {
+                        action = "Player Move",
+                        position = PlayerState.SerializeVector3(attacker.state.position),
+                        ID = attackerID
+                    };
+
+                    var defenderKnockback = new
+                    {
+                        action = "Player Move",
+                        position = PlayerState.SerializeVector3(defender.state.position),
+                        ID = defenderID
+                    };
+
 
                     foreach (var player in Players)
                     {
-                        player.Value.connection.Send(JsonSerializer.Serialize(playerKnockback));
-                        player.Value.connection.Send(JsonSerializer.Serialize(parryImpact));
+                        player.Value.connection.Send(JsonSerializer.Serialize(attackerKnockback));
+                        player.Value.connection.Send(JsonSerializer.Serialize(defenderKnockback));
                     }
                     break;
 
@@ -249,6 +316,16 @@ websocketServer.Start(connection =>
 
                     socketPlayer.alive = false; // Set player as dead
                     socketPlayer.health = 0; // Set health to 0
+
+                    var playerDeath = new
+                    {
+                        action = "Player Death",
+                        ID = socketID,
+                    };
+                    foreach (var player in Players)
+                    {
+                        if (player.Key != socketID) player.Value.connection.Send(JsonSerializer.Serialize(playerDeath));
+                    }
                     break;
 
                 case "Player Respawn":
@@ -297,7 +374,6 @@ class PlayerState
     public Vector3 position { get; set; }
     public Quaternion rotation { get; set; }
     public int health { get; set; }
-    public int damage { get; set; } = 20;
     public bool alive { get; set; } = false;
     public string color { get; set; } = "#ff0000"; 
     public bool Initialized { get; set; } = false;

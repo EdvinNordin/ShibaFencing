@@ -15,6 +15,8 @@ export function initializeWebSocket() {
     switch (data.action) {
       case "Set ID":
         game.playerID = data.ID;
+        game.IDLoaded = true;
+        game.startGame();
         break;
 
       case "Send Old Players":
@@ -24,7 +26,8 @@ export function initializeWebSocket() {
           let newPlayer = new Player(
             game.world,
             playerData.name,
-            playerData.color
+            playerData.color,
+            playerData.ID
           );
           if (playerData.alive) {
             newPlayer.mesh.visible = true; // Show player mesh if alive
@@ -42,11 +45,12 @@ export function initializeWebSocket() {
           newPlayer.updateRotation(playerData.rotation);
           game.addPlayer(newPlayer);
         });
+        game.opponentsLoaded = true;
+        game.startGame();
         break;
 
       case "New Player":
-        let newPlayer = new Player(game.world, data.name, data.color);
-        newPlayer.ID = data.ID;
+        let newPlayer = new Player(game.world, data.name, data.color, data.ID);
         game.addPlayer(newPlayer);
         break;
 
@@ -67,7 +71,6 @@ export function initializeWebSocket() {
       case "Player Attack":
         const attackingPlayer = game.findPlayer(data.ID);
         if (attackingPlayer) {
-          attackingPlayer.isAttacking = true; // Set attacking state
           attackingPlayer.weapon.Swing(socket); // Trigger weapon swing animation
         }
         break;
@@ -90,18 +93,14 @@ export function initializeWebSocket() {
       case "Player Death":
         const deadPlayer = game.findPlayer(data.ID);
         if (deadPlayer) {
-          deadPlayer.mesh.visible = false;
+          deadPlayer.death();
         }
         break;
 
       case "Player Respawn":
         const respawnPlayer = game.findPlayer(data.ID);
         if (respawnPlayer) {
-          respawnPlayer.health = data.health; // Reset health
-          respawnPlayer.updatePosition(data.position); // Reset position
-          respawnPlayer.updateRotation(data.rotation); // Reset rotation
-          respawnPlayer.mesh.position.y = 10; // Reset height
-          respawnPlayer.mesh.visible = true; // Show player mesh again
+          respawnPlayer.respawn();
         }
         break;
 
@@ -110,6 +109,19 @@ export function initializeWebSocket() {
         if (disconnectedPlayer) {
           game.removePlayer(disconnectedPlayer);
         }
+        break;
+
+      case "Sync Players":
+        data.players.forEach((playerData: any) => {
+          const existingPlayer = game.findPlayer(playerData.ID);
+          if (existingPlayer) {
+            existingPlayer.updatePosition(playerData.position);
+            existingPlayer.updateRotation(playerData.rotation);
+            existingPlayer.health = playerData.health;
+            existingPlayer.alive = playerData.alive;
+            existingPlayer.weapon.side = playerData.side;
+          }
+        });
         break;
 
       case "Server Error":
@@ -121,69 +133,16 @@ export function initializeWebSocket() {
     if (game.player && game.player.ID !== null) {
       switch (data.action) {
         case "Player Hit":
-          const attackerPlayer = game.findPlayer(data.attackerID);
-          if (!attackerPlayer) return; // Ensure attacker exists
+          const hitPlayer = game.findPlayer(data.ID);
+          if (!hitPlayer) return; // Ensure hit player exists
 
-          // Apply knockback effect to the attacked player
-          const attackerForward = new THREE.Vector3(0, 0, 1).applyQuaternion(
-            attackerPlayer.rotation
-          ); // Get attacker's forward direction
-          attackerForward.normalize(); // Ensure it's a unit vector
+          hitPlayer.updatePosition(data.position);
 
-          // Apply knockback force in the attacker's forward direction
-          const knockbackForce = 3.0; // Adjust this value as needed
-          const knockbackVector =
-            attackerForward.multiplyScalar(knockbackForce);
+          hitPlayer.health = data.health;
 
-          // Update the player's position with the knockback effect
-          const newPosition = new THREE.Vector3(
-            game.player.position.x + knockbackVector.x,
-            game.player.position.y + knockbackVector.y,
-            game.player.position.z + knockbackVector.z
-          );
-          game.player.updatePosition(
-            new RAPIER.Vector3(newPosition.x, newPosition.y, newPosition.z)
-          );
-
-          socket.send(
-            JSON.stringify({
-              action: "Player Move",
-              position: {
-                x: game.player.position.x,
-                y: game.player.position.y,
-                z: game.player.position.z,
-              },
-            })
-          );
-
-          game.player.health = data.health;
-          updateHealthBar();
-
-          // Check if this kills the player
-          if (game.player.health <= 0) {
-            socket.send(
-              JSON.stringify({
-                action: "Player Death",
-              })
-            );
-            game.player.mesh.visible = false; // Hide player mesh if health is 0
-            setTimeout(() => {
-              socket.send(
-                JSON.stringify({
-                  action: "Player Respawn",
-                })
-              );
-              if (game.player) {
-                game.player.health = 100;
-                updateHealthBar();
-                game.player.updatePosition(new RAPIER.Vector3(0, 0, 0)); // Reset position
-                game.player.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
-                game.player.mesh.position.y = 10; // Reset height
-                game.player.mesh.visible = true;
-              }
-            }, 3000);
+          if (hitPlayer === game.player) {
+            hitPlayer.updateHealthBar();
           }
-
           break;
       }
     }
@@ -201,16 +160,4 @@ export function initializeWebSocket() {
     //console.error("WebSocket error:", error);
   };
   return socket;
-}
-function updateHealthBar() {
-  if (!game.player) return;
-
-  health.style.width = `${game.player.health}%`;
-  health.style.backgroundColor =
-    game.player.health > 50
-      ? "green"
-      : game.player.health > 20
-      ? "orange"
-      : "red";
-  hp!.innerText = `${game.player.health}%`;
 }

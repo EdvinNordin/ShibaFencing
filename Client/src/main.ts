@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (playerNameInput) {
         const playerName = playerNameInput.value.trim();
         if (playerName) {
-          if (game) {
+          if (game && game.gameLoaded) {
             const color = colorInput.value;
             game.initializePlayer(playerName, color, game.socket);
             gameStarted = true; // Set the game started flag
@@ -100,8 +100,14 @@ async function init() {
     deltaTime = clock.getDelta();
     deltaTime = Math.min(deltaTime, 0.1);
     game.updateDeltaTime(deltaTime);
-    if (gameStarted && game.controller)
+    if (gameStarted && game.controller) {
       game.controller.updateController(game.socket);
+      game.players.forEach((player) => {
+        if (player.isAttacking) {
+          player.weapon.Swing(game.socket);
+        }
+      });
+    }
     game.world.step();
     game.renderer.render(game.scene, game.camera);
 

@@ -17,7 +17,10 @@ export class Game {
   player: Player | null = null;
   deltaTime: number = 0;
   socket: WebSocket;
-  playerID: string | null = null;
+  playerID: string = "";
+  IDLoaded: boolean = false;
+  opponentsLoaded: boolean = false;
+  gameLoaded: boolean = false;
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -101,7 +104,7 @@ export class Game {
   }
 
   initializePlayer(name: string, color: string, socket: WebSocket) {
-    this.player = new Player(this.world, name, color);
+    this.player = new Player(this.world, name, color, this.playerID);
     this.addPlayer(this.player);
     this.player.createNameTag(name);
     this.player.setColor(color);
@@ -133,5 +136,11 @@ export class Game {
     this.players.forEach((player, ID) => {
       console.log(`Player ID: ${ID}`);
     });
+  }
+
+  startGame() {
+    if (this.IDLoaded && this.opponentsLoaded) {
+      this.gameLoaded = true;
+    }
   }
 }
