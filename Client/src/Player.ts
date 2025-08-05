@@ -141,7 +141,7 @@ export class Player {
       context.textAlign = "center";
       context.textBaseline = "middle"; // Center the text vertically
       context.fillStyle = "white"; // Text fill color
-      context.strokeStyle = "black"; // Outline color
+      context.strokeStyle = "rgb(50, 50, 50)"; // Outline color
       context.lineWidth = 4; // Thickness of the outline
 
       // Draw the text outline and fill

@@ -261,8 +261,8 @@ export class Controller {
         this.player.updateHealthBar();
       }, 3000);
     } else if (
-      Math.abs(this.player.position.x) > 11 ||
-      Math.abs(this.player.position.z) > 11
+      Math.abs(this.player.position.x) > 10.5 ||
+      Math.abs(this.player.position.z) > 10.5
     ) {
       this.player.alive;
       this.player.movable = false;
