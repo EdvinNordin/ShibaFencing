@@ -15,6 +15,7 @@ export class Controller {
   cameraRadius: number = 10;
   cameraHeight: number = 5;
   moveDirection: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+  isFalling: boolean = true;
   moveReady: boolean = false;
   rotateReady: boolean = false;
   attackReady: boolean = false;
@@ -36,15 +37,16 @@ export class Controller {
     if (!this.camera.position.equals(this.cameraTargetPosition))
       this.updateCameraPosition();
 
-    if (this.moveReady && this.player.movable && !this.player.isAttacking)
+    if (this.moveReady && !this.isFalling && !this.player.isAttacking)
       this.move();
 
     if (!this.targetRotation.equals(this.player.rotation))
       this.lerpPlayer(socket);
 
-    if (this.attackReady) this.startAttack(socket);
+    if (this.attackReady && !this.isFalling) this.startAttack(socket);
 
-    if (this.player.isAttacking) this.attackAnimation(socket);
+    if (this.player.isAttacking && !this.isFalling)
+      this.attackAnimation(socket);
 
     if (this.player.alive) this.fallingPossibility(socket);
 
@@ -229,7 +231,7 @@ export class Controller {
 
     if (this.player.position.y > 0) {
       this.player.position.y -= fallSpeed;
-      this.player.movable = false;
+      this.isFalling = true;
       this.updatePosition = true;
       socket.send(
         JSON.stringify({
@@ -241,9 +243,7 @@ export class Controller {
           },
         })
       );
-    }
-
-    if (this.player.position.y < -20) {
+    } else if (this.player.position.y < -20) {
       socket.send(
         JSON.stringify({
           action: "Player Death",
@@ -266,7 +266,7 @@ export class Controller {
       Math.abs(this.player.position.z) > 10.5
     ) {
       this.player.alive;
-      this.player.movable = false;
+      this.isFalling = true;
       this.player.position.y -= fallSpeed;
       this.updatePosition = true;
       socket.send(
@@ -279,9 +279,11 @@ export class Controller {
           },
         })
       );
-    } else if (this.player.position.y < 0.1 && this.player.health > 0) {
-      this.player.position.y = 0; // Reset height to 0 if close enough
-      this.player.movable = true;
+    } else if (
+      this.player.position.y !== 0 &&
+      Math.abs(this.player.position.y) < 0.1
+    ) {
+      this.player.position.y = 0;
       this.updatePosition = true;
       socket.send(
         JSON.stringify({
@@ -293,6 +295,8 @@ export class Controller {
           },
         })
       );
+    } else {
+      this.isFalling = false;
     }
   }
 }

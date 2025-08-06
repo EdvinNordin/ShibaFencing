@@ -17,7 +17,6 @@ export class Player {
   ID: string;
   weapon: Weapon;
   isAttacking: boolean = false;
-  movable: boolean = false; // Flag to control movement
   alive: boolean = true; // Flag to check if player is alive
   gotHit: boolean = false; // Flag to check if player got hit
   color: string;
@@ -95,7 +94,6 @@ export class Player {
     this.alive = false; // Set alive flag to false
     this.health = 0;
     this.mesh.visible = false; // Hide player mesh if health is 0
-    this.movable = false; // Disable movement
     this.updateHealthBar();
     setTimeout(() => {
       game.socket.send(
