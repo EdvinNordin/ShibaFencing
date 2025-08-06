@@ -19,6 +19,7 @@ export class MobileController extends Controller {
   prevTouchX: number = -1;
   cameraRadius: number = 6;
   cameraHeight: number = 3;
+  rotationSpeed: number = 0.2;
 
   constructor(
     player: Player,
@@ -52,7 +53,9 @@ export class MobileController extends Controller {
           const touchDeltaX = touch.clientX - window.innerWidth / 2;
 
           this.camera.userData.orbitAngle -=
-            (touchDeltaX - this.prevTouchX) * 0.005;
+            (touchDeltaX - this.prevTouchX) *
+            game.deltaTime *
+            this.rotationSpeed;
           this.prevTouchX = touchDeltaX;
         }
       });

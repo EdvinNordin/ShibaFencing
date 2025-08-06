@@ -30,9 +30,9 @@ export function initializeWebSocket() {
             playerData.ID
           );
           if (playerData.alive) {
-            newPlayer.mesh.visible = true; // Show player mesh if alive
+            newPlayer.mesh.visible = true;
           } else {
-            newPlayer.mesh.visible = false; // Hide player mesh if not alive
+            newPlayer.mesh.visible = false;
           }
           newPlayer.ID = playerData.ID;
           newPlayer.health = playerData.health;
@@ -71,7 +71,7 @@ export function initializeWebSocket() {
       case "Player Attack":
         const attackingPlayer = game.findPlayer(data.ID);
         if (attackingPlayer) {
-          attackingPlayer.weapon.Swing(socket); // Trigger weapon swing animation
+          attackingPlayer.weapon.Swing(socket);
         }
         break;
 
@@ -84,8 +84,6 @@ export function initializeWebSocket() {
         if (attacker && defender) {
           const knockbackPosition = defender.weapon.KnockbackCalc(attacker);
           defender.updatePosition(knockbackPosition);
-          ///attacker.isAttacking = false;
-          //attacker.weapon.Reset();
         }
 
         break;
@@ -134,7 +132,7 @@ export function initializeWebSocket() {
       switch (data.action) {
         case "Player Hit":
           const hitPlayer = game.findPlayer(data.ID);
-          if (!hitPlayer) return; // Ensure hit player exists
+          if (!hitPlayer) return;
 
           hitPlayer.updatePosition(data.position);
 

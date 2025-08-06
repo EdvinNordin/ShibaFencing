@@ -2,7 +2,7 @@ import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Weapon } from "./Weapon";
 import { model, game } from "./main";
-import { setAudio } from "./Loader";
+//import { setAudio } from "./Loader";
 const size = new THREE.Vector3();
 export class Player {
   name: string;
@@ -17,11 +17,11 @@ export class Player {
   ID: string;
   weapon: Weapon;
   isAttacking: boolean = false;
-  alive: boolean = true; // Flag to check if player is alive
-  gotHit: boolean = false; // Flag to check if player got hit
+  alive: boolean = true;
+  gotHit: boolean = false;
   color: string;
   nameTag: THREE.Sprite | null = null;
-  hitCounter: number = 0; // Counter for hit detection
+  hitCounter: number = 0;
   //moveSound: THREE.PositionalAudio;
 
   constructor(world: RAPIER.World, name: string, color: string, ID: string) {
@@ -68,7 +68,6 @@ export class Player {
   }
 
   updatePosition(position: RAPIER.Vector3) {
-    //console.log(this.name, "position", position);
     this.position = position;
     this.mesh.position.set(position.x, position.y, position.z);
     this.rigidBody.setNextKinematicTranslation(position);
@@ -91,9 +90,9 @@ export class Player {
   }
 
   death() {
-    this.alive = false; // Set alive flag to false
+    this.alive = false;
     this.health = 0;
-    this.mesh.visible = false; // Hide player mesh if health is 0
+    this.mesh.visible = false;
     this.updateHealthBar();
     setTimeout(() => {
       game.socket.send(
@@ -108,8 +107,8 @@ export class Player {
   respawn() {
     this.alive = true;
     this.health = 100;
-    this.mesh.visible = true; // Show player mesh
-    this.updatePosition(new RAPIER.Vector3(0, 10, 0)); // Reset position
+    this.mesh.visible = true;
+    this.updatePosition(new RAPIER.Vector3(0, 10, 0));
     this.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
     this.updateHealthBar();
   }
@@ -127,15 +126,14 @@ export class Player {
 
   createNameTag(message: string) {
     if (this.nameTag) {
-      this.mesh.remove(this.nameTag); // Remove existing name tag if it exists
+      this.mesh.remove(this.nameTag);
     }
 
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
-    const fontSize = 48; // Font size in pixels
+    const fontSize = 48; // in pixels
 
     if (context) {
-      // Measure the text width and set canvas dimensions
       context.font = `${fontSize}px Arial`;
       const textWidth = context.measureText(message).width;
       const textHeight =
@@ -147,30 +145,26 @@ export class Player {
       // Reapply the font after resizing the canvas
       context.font = `${fontSize}px Arial`;
       context.textAlign = "center";
-      context.textBaseline = "middle"; // Center the text vertically
-      context.fillStyle = "white"; // Text fill color
-      context.strokeStyle = "rgb(50, 50, 50)"; // Outline color
-      context.lineWidth = 4; // Thickness of the outline
+      context.textBaseline = "middle";
+      context.fillStyle = "white";
+      context.strokeStyle = "rgb(50, 50, 50)";
+      context.lineWidth = 4;
 
-      // Draw the text outline and fill
       context.strokeText(message, canvas.width / 2, canvas.height / 2);
       context.fillText(message, canvas.width / 2, canvas.height / 2);
     }
 
-    // Create a texture from the canvas
     const texture = new THREE.CanvasTexture(canvas);
     texture.needsUpdate = true; // Ensure the texture updates
 
-    // Create a sprite material and sprite
     const spriteMaterial = new THREE.SpriteMaterial({
       map: texture,
       transparent: true,
     });
     const sprite = new THREE.Sprite(spriteMaterial);
 
-    // Adjust the sprite's scale and position
-    sprite.scale.set(message.length * 0.25, 0.5, 1); // Adjust as needed
-    sprite.position.set(0, 1.3, 0); // Position above the player
+    sprite.scale.set(message.length * 0.25, 0.5, 1); // Can be adjusted
+    sprite.position.set(0, 1.3, 0);
     this.nameTag = sprite;
     this.mesh.add(sprite);
   }

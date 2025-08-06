@@ -37,7 +37,7 @@ export function loadWeapon(): Promise<THREE.Object3D> {
     });
   });
 }
-
+/*
 const audioLoader = new THREE.AudioLoader();
 let moveBuffer: AudioBuffer | null = null;
 let swingBuffer: AudioBuffer | null = null;
@@ -85,7 +85,7 @@ export function setAudio(
   //audio.setRefDistance(10);
 
   return audio; // Return the audio instance if further control is needed
-}
+}*/
 
 const sparkTexture = new THREE.TextureLoader().load("spark.png"); // load spark texture
 const sparkMaterial = new THREE.SpriteMaterial({

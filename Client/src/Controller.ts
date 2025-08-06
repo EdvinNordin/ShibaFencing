@@ -11,7 +11,7 @@ export class Controller {
   targetRotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
   cameraTargetPosition: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   updatePosition: boolean = false;
-  rotationSpeed: number = game.deltaTime * 1;
+  rotationSpeed: number = game.deltaTime * 0.4;
   cameraRadius: number = 10;
   cameraHeight: number = 5;
   moveDirection: THREE.Vector3 = new THREE.Vector3(0, 0, 0);

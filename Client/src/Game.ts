@@ -92,18 +92,19 @@ export class Game {
       );
 
       let life = 1; // seconds
-      const dt: number = this.deltaTime; // Use the delta time from the game
+      const dt: number = this.deltaTime;
+
       const animate = (dt: number) => {
         life -= dt;
-        sparkInstance.scale.setScalar(life * 2); // Scale the spark based on its life
+        sparkInstance.scale.setScalar(life * 2);
         sparkInstance.material.opacity = life;
         if (life <= 0) {
           this.scene.remove(sparkInstance);
         } else {
-          requestAnimationFrame(() => animate(0.016)); // ~60fps
+          requestAnimationFrame(() => animate(this.deltaTime));
         }
       };
-      animate(0.016);
+      animate(this.deltaTime);
     }
   }
 

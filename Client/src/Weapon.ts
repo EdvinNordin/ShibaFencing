@@ -3,7 +3,7 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { weapon } from "./main";
 import { game } from "./main";
 import { Player } from "./Player";
-import { setAudio } from "./Loader";
+//import { setAudio } from "./Loader";
 
 enum Side {
   left = -1,
