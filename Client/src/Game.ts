@@ -117,12 +117,14 @@ export class Game {
     }
 
     if (isMobile) {
+      console.log("Initializing Mobile Controller");
       this.controller = new MobileController(
         this.player,
         this.world,
         this.camera
       );
     } else {
+      console.log("Initializing Desktop Controller");
       this.controller = new Controller(this.player, this.world, this.camera);
     }
 

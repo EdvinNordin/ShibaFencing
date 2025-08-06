@@ -3,12 +3,6 @@
   margin: 0;
 }
 
-body,
-html {
-  height: 100vh;
-  overflow: hidden;
-}
-
 .front {
   opacity: 1 !important;
 }
@@ -27,7 +21,6 @@ html {
   position: absolute;
   height: 100vh;
   width: 100vw;
-  z-index: 50;
 }
 #joystickZone {
   z-index: 100;
@@ -129,6 +122,7 @@ html {
   align-items: center;
   justify-content: center;
   margin-top: 20px;
+  z-index: 100;
 }
 
 #inputContainer {

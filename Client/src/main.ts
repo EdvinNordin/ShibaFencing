@@ -2,12 +2,56 @@ import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Game } from "./Game";
 import { loadModel, loadWeapon } from "./Loader";
+import screenfull from "screenfull";
 
 export let game: Game;
 export let weapon: THREE.Object3D;
 export let model: THREE.Object3D;
 export const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
+if (isMobile) {
+  const instructions = document.getElementById("instructions");
+
+  const fullscreenButton = document.getElementById("fullscreenButton");
+  if (fullscreenButton) {
+    fullscreenButton.style.setProperty("display", "block");
+    fullscreenButton.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (screenfull.isEnabled) {
+        screenfull.toggle();
+        if (fullscreenButton instanceof HTMLImageElement) {
+          if (screenfull.isFullscreen) {
+            fullscreenButton.src = "enter_fullscreen.svg";
+          } else {
+            fullscreenButton.src = "exit_fullscreen.svg";
+          }
+        }
+      }
+    });
+  }
+
+  const rotateScreenIcon = document.getElementById("rotateScreenIcon");
+  if (instructions) {
+    instructions.style.display = "none";
+  }
+  const portrait = window.matchMedia("(orientation: portrait)").matches;
+  if (portrait) {
+    rotateScreenIcon!.style.display = "block";
+  } else {
+    rotateScreenIcon!.style.display = "none";
+  }
+  window
+    .matchMedia("(orientation: portrait)")
+    .addEventListener("change", (e) => {
+      const portrait = e.matches;
+
+      if (portrait) {
+        rotateScreenIcon!.style.display = "block";
+      } else {
+        rotateScreenIcon!.style.display = "none";
+      }
+    });
+}
 let gameStarted = false;
 
 document.addEventListener("DOMContentLoaded", () => {

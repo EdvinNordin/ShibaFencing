@@ -9,9 +9,6 @@ import screenfull from "screenfull";
 const joystickZone = document.getElementById("joystickZone");
 const rotateZone = document.getElementById("rotateZone");
 const swingButton = document.getElementById("swingButton");
-const fullscreenButton = document.getElementById("fullscreenButton");
-const rotateScreenIcon = document.getElementById("rotateScreenIcon");
-const instructions = document.getElementById("instructions");
 
 export class MobileController extends Controller {
   targetRotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
@@ -39,7 +36,9 @@ export class MobileController extends Controller {
 
     if (rotateZone) {
       rotateZone.addEventListener("touchstart", (e) => {
-        e.preventDefault();
+        if (screenfull.isFullscreen) {
+          e.preventDefault();
+        }
         if (e.touches.length > 0) {
           const touch = e.touches[0];
           this.prevTouchX = touch.clientX - window.innerWidth / 2;
@@ -74,39 +73,6 @@ export class MobileController extends Controller {
         }
       });
     }
-
-    if (fullscreenButton) {
-      fullscreenButton.style.setProperty("display", "block");
-      fullscreenButton.addEventListener("click", (e) => {
-        e.preventDefault();
-        if (screenfull.isEnabled) {
-          screenfull.toggle();
-        }
-      });
-    }
-
-    if (instructions) {
-      instructions.style.display = "none";
-    }
-
-    const portrait = window.matchMedia("(orientation: portrait)").matches;
-    if (portrait) {
-      rotateScreenIcon!.style.display = "block";
-    } else {
-      rotateScreenIcon!.style.display = "none";
-    }
-
-    window
-      .matchMedia("(orientation: portrait)")
-      .addEventListener("change", (e) => {
-        const portrait = e.matches;
-
-        if (portrait) {
-          rotateScreenIcon!.style.display = "block";
-        } else {
-          rotateScreenIcon!.style.display = "none";
-        }
-      });
   }
 
   resetChecks() {
