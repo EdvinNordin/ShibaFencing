@@ -36,7 +36,8 @@ export class Controller {
     if (!this.camera.position.equals(this.cameraTargetPosition))
       this.updateCameraPosition();
 
-    if (this.moveReady && this.player.movable) this.move();
+    if (this.moveReady && this.player.movable && !this.player.isAttacking)
+      this.move();
 
     if (!this.targetRotation.equals(this.player.rotation))
       this.lerpPlayer(socket);
@@ -47,7 +48,7 @@ export class Controller {
 
     if (this.player.alive) this.fallingPossibility(socket);
 
-    if (this.updatePosition) {
+    if (this.updatePosition && !this.player.isAttacking) {
       this.player.updatePosition(this.player.position);
     }
   }
@@ -214,6 +215,7 @@ export class Controller {
       })
     );
     this.player.weapon.Swing(socket);
+
     //this.player.weapon.swingSound.play();
     this.attackReady = false;
   }
