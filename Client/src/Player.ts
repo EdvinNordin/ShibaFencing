@@ -2,6 +2,7 @@ import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Weapon } from "./Weapon";
 import { model, game } from "./main";
+import { setAudio } from "./Loader";
 const size = new THREE.Vector3();
 export class Player {
   name: string;
@@ -22,6 +23,7 @@ export class Player {
   color: string;
   nameTag: THREE.Sprite | null = null;
   hitCounter: number = 0; // Counter for hit detection
+  //moveSound: THREE.PositionalAudio;
 
   constructor(world: RAPIER.World, name: string, color: string, ID: string) {
     this.ID = ID;
@@ -56,6 +58,14 @@ export class Player {
     this.createNameTag(this.name);
 
     this.updatePosition(this.position);
+    /*
+    const moveSound = setAudio(game.audioListener, "move", 0.1);
+    if (!moveSound) {
+      throw new Error("Failed to create move sound audio.");
+    }
+    this.moveSound = moveSound;
+
+    this.mesh.add(this.moveSound);*/
   }
 
   updatePosition(position: RAPIER.Vector3) {

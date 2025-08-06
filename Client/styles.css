@@ -3,6 +3,12 @@
   margin: 0;
 }
 
+body,
+html {
+  height: 100vh;
+  overflow: hidden;
+}
+
 .front {
   opacity: 1 !important;
 }
@@ -14,8 +20,8 @@
 #mobileControls {
   display: none;
   position: absolute;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
 }
 #rotateZone {
   position: absolute;
@@ -26,15 +32,16 @@
 #joystickZone {
   z-index: 100;
   position: absolute;
-  bottom: 20%;
-  left: 5%;
+  bottom: 20vh;
+  left: 5vw;
   width: 100px;
   height: 100px;
 }
+
 #swingButton {
   position: absolute;
-  bottom: 22%;
-  right: 5%;
+  bottom: 22vh;
+  right: 5vw;
   height: 75px;
   width: 75px;
   border-radius: 100%;

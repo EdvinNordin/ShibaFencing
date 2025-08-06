@@ -6,9 +6,10 @@ import { loadModel, loadWeapon } from "./Loader";
 export let game: Game;
 export let weapon: THREE.Object3D;
 export let model: THREE.Object3D;
-
 export const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
 let gameStarted = false;
+
 document.addEventListener("DOMContentLoaded", () => {
   const startGameForm = document.getElementById("startGameForm");
   const colorInput = document.getElementById("favcolor") as HTMLInputElement;

@@ -3,6 +3,7 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { weapon } from "./main";
 import { game } from "./main";
 import { Player } from "./Player";
+import { setAudio } from "./Loader";
 
 enum Side {
   left = -1,
@@ -27,6 +28,8 @@ export class Weapon {
   side: Side = Side.left;
   owner: Player;
   startTime: number = 0;
+  /*swingSound: THREE.PositionalAudio;
+  parrySound: THREE.PositionalAudio;*/
 
   constructor(world: RAPIER.World, owner: Player) {
     this.owner = owner;
@@ -61,6 +64,20 @@ export class Weapon {
     this.collider = world.createCollider(colliderDesc, this.rigidBody);
     this.collider.setSensor(true); // Set the collider as a sensor
     this.updateRotation(this.sideToQuaternion(this.side));
+    /*
+    const swingSound = setAudio(game.audioListener, "swing", 0.5);
+    if (!swingSound) {
+      throw new Error("Failed to create swing sound audio.");
+    }
+    this.swingSound = swingSound;
+    this.mesh.add(this.swingSound);
+
+    const parrySound = setAudio(game.audioListener, "parry", 0.1);
+    if (!parrySound) {
+      throw new Error("Failed to create parry sound audio.");
+    }
+    this.parrySound = parrySound;
+    this.mesh.add(this.parrySound);*/
   }
 
   Swing(socket: WebSocket) {
@@ -116,6 +133,8 @@ export class Weapon {
 
         // If the weapon collider contacts the opponent's weapon
         if (weaponContact) {
+          /*this.swingSound.stop();
+          this.parrySound.play();*/
           opponent.gotHit = true;
 
           const contactPoint1 = weaponContact.point1;

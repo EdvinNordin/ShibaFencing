@@ -38,6 +38,55 @@ export function loadWeapon(): Promise<THREE.Object3D> {
   });
 }
 
+const audioLoader = new THREE.AudioLoader();
+let moveBuffer: AudioBuffer | null = null;
+let swingBuffer: AudioBuffer | null = null;
+let parryBuffer: AudioBuffer | null = null;
+
+// Load the audio buffer once
+audioLoader.load("scrape.mp3", (buffer) => {
+  moveBuffer = buffer;
+});
+
+audioLoader.load("swing.mp3", (buffer) => {
+  swingBuffer = buffer;
+});
+
+audioLoader.load("parry.mp3", (buffer) => {
+  parryBuffer = buffer;
+});
+
+// Utility function to set the audio
+export function setAudio(
+  listener: THREE.AudioListener,
+  bufferName: "move" | "swing" | "parry",
+  volume: number = 0.5
+) {
+  let selectedBuffer: AudioBuffer | null = null;
+  switch (bufferName) {
+    case "move":
+      selectedBuffer = moveBuffer;
+      break;
+    case "swing":
+      selectedBuffer = swingBuffer;
+      break;
+    case "parry":
+      selectedBuffer = parryBuffer;
+      break;
+  }
+  if (!selectedBuffer) {
+    console.warn("Audio buffer not loaded yet.");
+    return;
+  }
+
+  const audio = new THREE.PositionalAudio(listener);
+  audio.setBuffer(selectedBuffer);
+  audio.setVolume(volume);
+  //audio.setRefDistance(10);
+
+  return audio; // Return the audio instance if further control is needed
+}
+
 const sparkTexture = new THREE.TextureLoader().load("spark.png"); // load spark texture
 const sparkMaterial = new THREE.SpriteMaterial({
   map: sparkTexture,

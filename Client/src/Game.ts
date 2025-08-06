@@ -11,6 +11,7 @@ export class Game {
   scene: THREE.Scene;
   world: RAPIER.World;
   camera: THREE.PerspectiveCamera;
+  //audioListener: THREE.AudioListener;
   renderer: THREE.WebGLRenderer;
   players: Map<string, Player>;
   controller: Controller | MobileController | null = null;
@@ -38,6 +39,9 @@ export class Game {
     this.camera.position.set(0, 5, 10);
     this.camera.lookAt(0, 0, 0);
     this.scene.add(this.camera);
+
+    /*this.audioListener = new THREE.AudioListener();
+    this.camera.add(this.audioListener);*/
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.shadowMap.enabled = true;
