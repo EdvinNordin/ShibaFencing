@@ -52,7 +52,7 @@ export class Player {
 
     this.weapon = new Weapon(world, this);
     this.mesh.add(this.weapon.mesh);
-    this.weapon.mesh.position.set(0, 0.4, 0.75);
+    this.weapon.mesh.position.set(0, 0.4, 0.8);
 
     this.createNameTag(this.name);
 

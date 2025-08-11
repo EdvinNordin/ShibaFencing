@@ -32,6 +32,11 @@ export function loadWeapon(): Promise<THREE.Object3D> {
           child.castShadow = true; // Enable shadow casting for the mesh
           child.receiveShadow = true; // Enable shadow receiving for the mesh
         }
+        if (child instanceof THREE.Mesh) {
+          child.material = new THREE.MeshBasicMaterial({
+            color: new THREE.Color(0.4, 0.4, 0.4),
+          });
+        }
       });
       resolve(gltf.scene);
     });
