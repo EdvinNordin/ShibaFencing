@@ -404,7 +404,7 @@ class PlayerState
     public string name { get; set; } = "Player";
     public Vector3 position { get; set; }
     public Quaternion rotation { get; set; }
-    public int health { get; set; }
+    public int health { get; set; } = 100;
     public bool alive { get; set; } = false;
     public string color { get; set; } = "#ff0000"; 
     public bool Initialized { get; set; } = false;
