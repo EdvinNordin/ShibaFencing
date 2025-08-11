@@ -402,7 +402,7 @@ WebApplication.CreateBuilder(args).Build().Run();
 class PlayerState
 {
     public string name { get; set; } = "Player";
-    public Vector3 position { get; set; }
+    public Vector3 position { get; set; } = new Vector3(0, 0, 0);
     public Quaternion rotation { get; set; }
     public int health { get; set; } = 100;
     public bool alive { get; set; } = false;
