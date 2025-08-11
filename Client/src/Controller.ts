@@ -51,7 +51,13 @@ export class Controller {
     if (this.player.alive) this.fallingPossibility(socket);
 
     if (this.updatePosition && !this.player.isAttacking) {
-      this.player.updatePosition(this.player.position);
+      if (this.isFalling) {
+        this.player.updatePosition(this.player.position);
+      } else {
+        this.player.updatePosition(
+          new RAPIER.Vector3(this.player.position.x, 0, this.player.position.z)
+        );
+      }
     }
   }
 

@@ -221,14 +221,14 @@ websocketServer.Start(connection =>
                     var hitPlayer = Players[hitPlayerID];
 
                     var hitDirection = new Vector3(attacking.state.position.X-hitPlayer.state.position.X, 
-                                                               attacking.state.position.Y-hitPlayer.state.position.Y, 
+                                                               0, 
                                                                attacking.state.position.Z-hitPlayer.state.position.Z);
 
                     hitDirection = Vector3.Normalize(hitDirection) * 3.0f; 
 
 
                     hitPlayer.state.setPosition(hitPlayer.state.position.X - hitDirection.X,
-                                               hitPlayer.state.position.Y - hitDirection.Y,
+                                               0,
                                                hitPlayer.state.position.Z - hitDirection.Z);
 
                     hitPlayer.state.health -= damage; // Apply damage
@@ -277,17 +277,17 @@ websocketServer.Start(connection =>
                     var defender = Players[defenderID];
 
                     var knockbackDirection = new Vector3(attacker.state.position.X-defender.state.position.X, 
-                                                               attacker.state.position.Y-defender.state.position.Y, 
+                                                               0, 
                                                                attacker.state.position.Z-defender.state.position.Z);
 
                     knockbackDirection = Vector3.Normalize(knockbackDirection) * 3.0f;
 
                     attacker.state.setPosition(attacker.state.position.X + knockbackDirection.X,
-                                               attacker.state.position.Y + knockbackDirection.Y,
+                                               0,
                                                attacker.state.position.Z + knockbackDirection.Z);
 
                     defender.state.setPosition(defender.state.position.X - knockbackDirection.X,
-                                               defender.state.position.Y - knockbackDirection.Y,
+                                               0,
                                                defender.state.position.Z - knockbackDirection.Z);
 
                     var attackerKnockback = new
@@ -366,6 +366,37 @@ websocketServer.Start(connection =>
     };
 });
 
+System.Timers.Timer inactivityTimer = new System.Timers.Timer(5*60*1000); // Check every 5 minutes
+inactivityTimer.Elapsed += (sender, e) =>
+{
+    var now = DateTime.UtcNow;
+    var inactivePlayers = Players.Where(p => (now - p.Value.state.lastActivity).TotalMinutes > 5).ToList();
+
+    foreach (var inactivePlayer in inactivePlayers)
+    {
+        var disconnectMsg = new
+        {
+            action = "Remove Player",
+            ID = inactivePlayer.Key
+        };
+
+        // Notify other players about the removal
+        foreach (var player in Players)
+        {
+            if (player.Key != inactivePlayer.Key)
+            {
+                player.Value.connection.Send(JsonSerializer.Serialize(disconnectMsg));
+            }
+        }
+
+        // Remove the inactive player
+        Players.Remove(inactivePlayer.Key);
+        Console.WriteLine($"Removed inactive player: {inactivePlayer.Key}");
+    }
+};
+inactivityTimer.AutoReset = true; // Ensure the timer repeats
+inactivityTimer.Start();
+
 WebApplication.CreateBuilder(args).Build().Run();
 
 class PlayerState
@@ -378,6 +409,7 @@ class PlayerState
     public string color { get; set; } = "#ff0000"; 
     public bool Initialized { get; set; } = false;
     public int side { get; set; } = -1;
+    public DateTime lastActivity { get; set; } = DateTime.UtcNow;
     
 
     public PlayerState()
@@ -389,40 +421,15 @@ class PlayerState
     public void setPosition(float x, float y, float z)
     {
         position = new Vector3(x, y, z);
+        lastActivity = DateTime.UtcNow; // Update last activity time
     }
     public void setRotation(float x, float y, float z, float w)
     {
         rotation = new Quaternion(x, y, z, w);
+        lastActivity = DateTime.UtcNow; // Update last activity time
     }
 
-    public bool attack(PlayerState target, float range)
-    {
-        // 1. Get attacker’s forward vector (z‑axis).
-        Vector3 forward = Vector3.Transform(Vector3.UnitZ, this.rotation);
-        forward = Vector3.Normalize(forward);
-
-        // 2. Vector from attacker to target, flattened on XZ plane (ignore height).
-        Vector3 toTarget = target.position - this.position;
-        toTarget.Y = 0f;
-        float distance = toTarget.Length();
-
-        if (distance > range || distance < 0.0001f)
-            return false;
-
-        toTarget = Vector3.Normalize(toTarget);
-
-        float swingAngle = 180f; // Example swing angle in degrees
-
-        // 3. Dot‑product test against cone threshold.
-        float halfAngleRad = (swingAngle * 0.5f) * (MathF.PI / 180f);
-        float threshold = MathF.Cos(halfAngleRad);
-
-        float dot = Vector3.Dot(forward, toTarget);
-        bool isHit = dot >= threshold;
-
-        return isHit;
-    }
-    public static object SerializeVector3(Vector3 vector)
+       public static object SerializeVector3(Vector3 vector)
     {
         return new { x = vector.X, y = vector.Y, z = vector.Z };
     }
