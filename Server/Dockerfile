@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy everything from the Server folder and restore
-COPY Server/. .
+COPY . .
 RUN dotnet restore
 
 # Build and publish the app
