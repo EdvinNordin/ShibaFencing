@@ -2,6 +2,7 @@ import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { game } from "./main";
 import { Player } from "./Player";
+import { NPCPlayer } from "./NPC";
 
 let health = document.getElementById("hp") as HTMLDivElement;
 let hp = document.getElementById("currentHP");
@@ -21,7 +22,7 @@ export function initializeWebSocket() {
 
       case "Send Old Players":
         data.players.forEach((playerData: any) => {
-          if (playerData.initialized === false) return;
+          if (!playerData.initialized) return;
           //if (game.playerID === playerData.ID) return;
           let newPlayer = new Player(
             game.world,
@@ -45,13 +46,35 @@ export function initializeWebSocket() {
           newPlayer.updateRotation(playerData.rotation);
           game.addPlayer(newPlayer);
         });
+        if (game.players.size === 0) {
+          game.botGame = true;
+          game.bot = new NPCPlayer(game.world);
+          game.bot.respawn();
+        }
         game.opponentsLoaded = true;
         game.startGame();
+
         break;
+
+      /* case "NPC Update":
+        const npc = game.bot;
+        if (npc) {
+          npc.updatePosition(data.position);
+          npc.updateRotation(data.rotation);
+          npc.health = data.health;
+          npc.alive = data.alive;
+          npc.color = data.color;
+          npc.weapon.side = data.side;
+        }
+        break; */
 
       case "New Player":
         let newPlayer = new Player(game.world, data.name, data.color, data.ID);
         game.addPlayer(newPlayer);
+        if (game.botGame && game.bot) {
+          game.botGame = false;
+          game.bot.death();
+        }
         break;
 
       case "Player Move":
@@ -82,7 +105,7 @@ export function initializeWebSocket() {
           new RAPIER.Vector3(data.impact.x, data.impact.y, data.impact.z)
         );
         if (attacker && defender) {
-          const knockbackPosition = defender.weapon.KnockbackCalc(attacker);
+          const knockbackPosition = defender.weapon.knockbackCalc(attacker);
           defender.updatePosition(knockbackPosition);
         }
 
@@ -106,6 +129,10 @@ export function initializeWebSocket() {
         const disconnectedPlayer = game.findPlayer(data.ID);
         if (disconnectedPlayer) {
           game.removePlayer(disconnectedPlayer);
+          if (!game.botGame && game.players.size === 1 && game.bot) {
+            game.botGame = true;
+            game.bot.respawn();
+          }
         }
         break;
 

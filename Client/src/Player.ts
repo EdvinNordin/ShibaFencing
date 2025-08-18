@@ -100,6 +100,7 @@ export class Player {
           action: "Player Respawn",
         })
       );
+
       this.respawn();
     }, 3000);
   }

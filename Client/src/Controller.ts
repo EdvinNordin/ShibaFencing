@@ -180,7 +180,6 @@ export class Controller {
     }
 
     //this.player.moveSound.play();
-
     game.socket.send(
       JSON.stringify({
         action: "Player Move",
@@ -222,6 +221,7 @@ export class Controller {
         range: this.player.weapon.range,
       })
     );
+
     this.player.weapon.Swing(socket);
 
     //this.player.weapon.swingSound.play();
@@ -239,6 +239,7 @@ export class Controller {
       this.player.position.y -= fallSpeed;
       this.isFalling = true;
       this.updatePosition = true;
+
       socket.send(
         JSON.stringify({
           action: "Player Move",
@@ -255,6 +256,7 @@ export class Controller {
           action: "Player Death",
         })
       );
+
       this.player.death();
       this.player.updateHealthBar();
 
@@ -264,6 +266,7 @@ export class Controller {
             action: "Player Respawn",
           })
         );
+
         this.player.respawn();
         this.player.updateHealthBar();
       }, 3000);
@@ -271,10 +274,10 @@ export class Controller {
       Math.abs(this.player.position.x) > 10.5 ||
       Math.abs(this.player.position.z) > 10.5
     ) {
-      this.player.alive;
       this.isFalling = true;
       this.player.position.y -= fallSpeed;
       this.updatePosition = true;
+
       socket.send(
         JSON.stringify({
           action: "Player Move",
@@ -291,6 +294,7 @@ export class Controller {
     ) {
       this.player.position.y = 0;
       this.updatePosition = true;
+
       socket.send(
         JSON.stringify({
           action: "Player Move",

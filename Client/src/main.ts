@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Game } from "./Game";
+import { NPCPlayer } from "./NPC";
 import { loadModel, loadWeapon } from "./Loader";
 import screenfull from "screenfull";
 
@@ -72,7 +73,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const color = colorInput.value;
             game.initializePlayer(playerName, color, game.socket);
             gameStarted = true; // Set the game started flag
-
             // Hide the input UI
             const startScreen = document.getElementById("startScreen");
             if (startScreen) {
@@ -100,33 +100,6 @@ async function init() {
 
   game = new Game();
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-  directionalLight.position.set(12, 10, 8);
-  directionalLight.castShadow = true;
-  directionalLight.shadow.camera.top = 50;
-  directionalLight.shadow.camera.bottom = -50;
-  directionalLight.shadow.camera.left = -50;
-  directionalLight.shadow.camera.right = 50;
-  directionalLight.shadow.mapSize.width = 2048;
-  directionalLight.shadow.mapSize.height = 2048;
-  directionalLight.shadow.camera.near = 0.5;
-  directionalLight.shadow.camera.far = 50;
-  game.scene.add(directionalLight);
-
-  let groundGeometry = new THREE.BoxGeometry(20, 1, 20);
-  let groundMaterial = new THREE.MeshStandardMaterial({ color: 0x1a7b29 });
-  let groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
-  groundMesh.receiveShadow = true;
-  groundMesh.position.set(0, -1, 0);
-  game.scene.add(groundMesh);
-
-  let groundColliderDesc = RAPIER.ColliderDesc.cuboid(
-    10.0,
-    0.5,
-    10.0
-  ).setTranslation(0, -1, 0);
-  game.world.createCollider(groundColliderDesc);
-
   const debugRenderer = new RapierDebugRenderer(game.scene, game.world);
 
   // Add event listeners for window resize
@@ -145,6 +118,7 @@ async function init() {
     deltaTime = clock.getDelta();
     deltaTime = Math.min(deltaTime, 0.1);
     game.updateDeltaTime(deltaTime);
+
     if (gameStarted && game.controller) {
       game.controller.updateController(game.socket);
       game.players.forEach((player) => {
@@ -153,6 +127,11 @@ async function init() {
         }
       });
     }
+
+    if (game.botGame && game.bot) {
+      game.bot.update();
+    }
+
     game.world.step();
     game.renderer.render(game.scene, game.camera);
 

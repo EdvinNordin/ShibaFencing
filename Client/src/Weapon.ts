@@ -113,7 +113,7 @@ export class Weapon {
     );
     this.updateRotation(this.rotation);
 
-    if (this.owner === game.player) {
+    if (this.owner === game.player || game.botGame) {
       this.checkCollision(socket);
     }
 
@@ -150,14 +150,38 @@ export class Weapon {
           // If the weapon collider contacts the opponent's body
         } else if (bodyContact) {
           opponent.gotHit = true;
-          socket.send(
-            JSON.stringify({
-              action: "Player Hit",
-              attackerID: this.owner.ID,
-              defenderID: opponent.ID,
-              damage: this.damage,
-            })
-          );
+          if (game.botGame) {
+            let knockbackPos = opponent.weapon.knockbackCalc(this.owner);
+            opponent.updatePosition(knockbackPos);
+            opponent.health -= this.damage;
+            if (opponent.ID === game.playerID) {
+              socket.send(
+                JSON.stringify({
+                  action: "Player Move",
+                  position: {
+                    x: opponent.position.x,
+                    y: opponent.position.y,
+                    z: opponent.position.z,
+                  },
+                })
+              );
+            }
+            if (opponent === game.player) {
+              opponent.updateHealthBar();
+            }
+            if (opponent.health <= 0) {
+              opponent.death();
+            }
+          } else {
+            socket.send(
+              JSON.stringify({
+                action: "Player Hit",
+                attackerID: this.owner.ID,
+                defenderID: opponent.ID,
+                damage: this.damage,
+              })
+            );
+          }
         }
       }
     });
@@ -189,19 +213,47 @@ export class Weapon {
   }
 
   weaponHit(contactPoint: RAPIER.Vector, opponent: Player, socket: WebSocket) {
-    game.Spark(contactPoint);
-    if (this.owner === game.player) {
-      socket.send(
-        JSON.stringify({
-          action: "Player Parry",
-          attackerID: this.owner.ID,
-          defenderID: opponent.ID,
-        })
-      );
+    if (game.botGame) {
+      if (
+        this.owner.isAttacking &&
+        opponent.isAttacking &&
+        this.owner === game.player
+      ) {
+        //console.log("Both players are attacking, parrying...");
+        return;
+      }
+
+      game.Spark(contactPoint);
+      const ownerKnockbackPos = this.knockbackCalc(opponent);
+      const opponentKnockbackPos = opponent.weapon.knockbackCalc(this.owner);
+      this.owner.updatePosition(ownerKnockbackPos);
+      opponent.updatePosition(opponentKnockbackPos);
+    } else if (this.owner === game.player) {
+      game.Spark(contactPoint);
+      if (game.botGame) {
+        socket.send(
+          JSON.stringify({
+            action: "Player Move",
+            position: {
+              x: this.owner.position.x,
+              y: this.owner.position.y,
+              z: this.owner.position.z,
+            },
+          })
+        );
+      } else {
+        socket.send(
+          JSON.stringify({
+            action: "Player Parry",
+            attackerID: this.owner.ID,
+            defenderID: opponent.ID,
+          })
+        );
+      }
     }
   }
 
-  KnockbackCalc(opponent: Player) {
+  knockbackCalc(opponent: Player) {
     const direction = new THREE.Vector3();
     direction.subVectors(this.owner.position, opponent.position);
     direction.normalize();
@@ -237,22 +289,24 @@ export class Weapon {
     newPosition: THREE.Vector3,
     contactPoint: RAPIER.Vector
   ) {
-    socket.send(
-      JSON.stringify({
-        action: "Player Parry",
-        attackerID: attacker.ID,
-        defenderID: defender.ID,
-        knockbackPosition: {
-          x: newPosition.x,
-          y: newPosition.y,
-          z: newPosition.z,
-        },
-        impactPosition: {
-          x: contactPoint.x,
-          y: contactPoint.y,
-          z: contactPoint.z,
-        },
-      })
-    );
+    if (!game.botGame) {
+      socket.send(
+        JSON.stringify({
+          action: "Player Parry",
+          attackerID: attacker.ID,
+          defenderID: defender.ID,
+          knockbackPosition: {
+            x: newPosition.x,
+            y: newPosition.y,
+            z: newPosition.z,
+          },
+          impactPosition: {
+            x: contactPoint.x,
+            y: contactPoint.y,
+            z: contactPoint.z,
+          },
+        })
+      );
+    }
   }
 }

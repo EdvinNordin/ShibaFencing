@@ -1,0 +1,209 @@
+import * as THREE from "three";
+import RAPIER from "@dimforge/rapier3d-compat";
+import { Player } from "./Player";
+import { game } from "./main";
+
+export class NPCPlayer extends Player {
+  targetPosition = new THREE.Vector3(0, 0, 0);
+  targetRotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
+  targetUpdateFrequency: number = 0;
+  distanceToPlayer: number = Infinity;
+  isFalling: boolean = true;
+  constructor(world: RAPIER.World) {
+    super(
+      world,
+      "Evil Shiba Bot",
+      "black",
+      "00000000-0000-0000-0000-000000000000"
+    );
+    this.alive = true;
+    this.speed = 4;
+    game.scene.add(this.mesh);
+  }
+
+  update() {
+    if (!this.alive) return;
+
+    /* if (!game.botGame) {
+      this.runOut();
+
+      this.fallingPossibility();
+      return;
+    } */
+    if (!this.isFalling) {
+      if (
+        game.player !== null &&
+        game.player.alive &&
+        game.player.position.y === 0
+      ) {
+        this.distanceToPlayer = this.mesh.position.distanceTo(
+          game.player.mesh.position
+        );
+        if (this.distanceToPlayer < 3 || this.isAttacking) {
+          this.attack();
+        } else {
+          this.targetRotation.setFromUnitVectors(
+            new THREE.Vector3(0, 0, 1),
+            new THREE.Vector3(
+              game.player.position.x - this.position.x,
+              0,
+              game.player.position.z - this.position.z
+            ).normalize()
+          );
+          if (!this.targetRotation.equals(this.rotation)) {
+            this.slerpPlayer();
+          }
+          this.moveTowardsPlayer(game.player!);
+        }
+      } else {
+        if (!this.targetRotation.equals(this.rotation)) {
+          this.slerpPlayer();
+        }
+        this.moveRandomly();
+      }
+    }
+    this.fallingPossibility();
+  }
+
+  moveTowardsPlayer(player: Player) {
+    const direction = new THREE.Vector3();
+    direction.subVectors(player.position, this.position).normalize();
+    const movement = direction.multiplyScalar(this.speed * game.deltaTime);
+    this.position = new RAPIER.Vector3(
+      this.position.x + movement.x,
+      0,
+      this.position.z + movement.z
+    );
+    this.updatePosition(this.position);
+  }
+
+  moveRandomly() {
+    // Simple random movement logic for the NPC
+    this.targetUpdateFrequency -= game.deltaTime;
+    if (Math.random() < 0.05 && this.targetUpdateFrequency <= 0) {
+      this.targetPosition.set(
+        Math.random() * 20 - 10,
+        0,
+        Math.random() * 20 - 10
+      );
+
+      this.targetRotation.setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        this.targetPosition.clone().sub(this.position).normalize()
+      );
+      this.targetUpdateFrequency = 5000;
+    }
+
+    let direction = new THREE.Vector3();
+    direction.subVectors(this.targetPosition, this.position);
+    if (direction.length() < 1) {
+      this.targetPosition.copy(this.position);
+      this.targetUpdateFrequency = 0;
+      return;
+    }
+    direction.normalize();
+    direction.y = 0;
+
+    let movement = direction.multiplyScalar(this.speed * 0.5 * game.deltaTime);
+
+    this.position = new RAPIER.Vector3(
+      this.position.x + movement.x,
+      this.position.y + movement.y,
+      this.position.z + movement.z
+    );
+
+    this.updatePosition(this.position);
+  }
+
+  runOut() {
+    if (Math.abs(this.position.y) > Math.abs(this.position.x)) {
+      this.position.y +=
+        this.speed * game.deltaTime * (this.position.y > 0 ? 1 : -1);
+    } else {
+      this.position.x +=
+        this.speed * game.deltaTime * (this.position.x > 0 ? 1 : -1);
+    }
+  }
+
+  findClosestPlayer() {
+    let closestPlayer: Player | null = null;
+    let closestDistance = Infinity;
+
+    game.players.forEach((player) => {
+      if (player.ID !== this.ID && player.alive) {
+        const distance = this.mesh.position.distanceTo(player.mesh.position);
+        if (distance < closestDistance) {
+          this.distanceToPlayer = distance;
+          closestPlayer = player;
+        }
+      }
+    });
+    return closestPlayer;
+  }
+
+  slerpPlayer() {
+    this.rotation.slerp(
+      this.targetRotation,
+      1 - Math.pow(0.001, game.deltaTime)
+    );
+
+    this.updateRotation(this.rotation);
+  }
+
+  attack() {
+    this.weapon.Swing(game.socket);
+  }
+
+  fallingPossibility() {
+    const fallSpeed = 10 * game.deltaTime;
+
+    if (this.position.y > 0) {
+      this.position.y -= fallSpeed;
+      this.isFalling = true;
+      this.updatePosition(this.position);
+    } else if (this.position.y < -20) {
+      this.death();
+      this.updateHealthBar();
+      setTimeout(() => {
+        this.respawn();
+        this.updateHealthBar();
+      }, 3000);
+    } else if (
+      Math.abs(this.position.x) > 10.5 ||
+      Math.abs(this.position.z) > 10.5
+    ) {
+      this.isFalling = true;
+      this.position.y -= fallSpeed;
+      this.updatePosition(this.position);
+    } else if (this.position.y !== 0) {
+      this.isFalling = false;
+      this.position.y = 0;
+      this.updatePosition(this.position);
+    } else {
+      this.isFalling = false;
+    }
+  }
+
+  death() {
+    this.alive = false;
+    this.health = 0;
+    this.mesh.visible = false;
+    setTimeout(() => {
+      if (game.botGame) {
+        this.respawn();
+      }
+    }, 3000);
+  }
+
+  respawn() {
+    this.alive = true;
+    this.health = 100;
+    this.mesh.visible = true;
+    this.updatePosition(new RAPIER.Vector3(0, 10, 0));
+    this.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
+  }
+}
+
+function randomPosition() {
+  new RAPIER.Vector3(Math.random() * 20 - 10, 0, Math.random() * 20 - 10);
+}

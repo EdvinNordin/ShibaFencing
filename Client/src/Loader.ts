@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { positionViewDirection } from "three/tsl";
 
 const loader = new GLTFLoader();
 
@@ -7,8 +8,10 @@ export function loadModel(): Promise<THREE.Object3D> {
   return new Promise((resolve, reject) => {
     loader.load("shiba.glb", (gltf) => {
       const model = gltf.scene;
+      model.name = "shiba";
       const pivot = new THREE.Object3D();
       pivot.add(model);
+      pivot.name = "pivot";
 
       // Offset the model to adjust the pivot point
       model.position.set(0, 0.5, 0.5);

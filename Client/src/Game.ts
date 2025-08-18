@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Player } from "./Player";
+import { NPCPlayer } from "./NPC";
 import { Controller } from "./Controller";
 import { MobileController } from "./Mobile";
 import { isMobile } from "./main";
@@ -22,6 +23,8 @@ export class Game {
   IDLoaded: boolean = false;
   opponentsLoaded: boolean = false;
   gameLoaded: boolean = false;
+  botGame: boolean = false;
+  bot: NPCPlayer | null = null;
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -51,6 +54,33 @@ export class Game {
     this.players = new Map<string, Player>();
 
     this.socket = initializeWebSocket();
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(12, 10, 8);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.camera.top = 50;
+    directionalLight.shadow.camera.bottom = -50;
+    directionalLight.shadow.camera.left = -50;
+    directionalLight.shadow.camera.right = 50;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.near = 0.5;
+    directionalLight.shadow.camera.far = 50;
+    this.scene.add(directionalLight);
+
+    let groundGeometry = new THREE.BoxGeometry(20, 1, 20);
+    let groundMaterial = new THREE.MeshStandardMaterial({ color: 0x1a7b29 });
+    let groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+    groundMesh.receiveShadow = true;
+    groundMesh.position.set(0, -1, 0);
+    this.scene.add(groundMesh);
+
+    let groundColliderDesc = RAPIER.ColliderDesc.cuboid(
+      10.0,
+      0.5,
+      10.0
+    ).setTranslation(0, -1, 0);
+    this.world.createCollider(groundColliderDesc);
   }
 
   updateDeltaTime(deltaTime: number) {
@@ -134,6 +164,12 @@ export class Game {
         color: color,
       })
     );
+  }
+
+  spawnBot() {
+    /* const bot = new Player(this.world, "Bot", 0x00ff00, );
+    this.addPlayer(bot);
+    bot.spawn(); */
   }
 
   printPlayers() {
