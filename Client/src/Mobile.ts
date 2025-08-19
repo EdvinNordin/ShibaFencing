@@ -19,7 +19,7 @@ export class MobileController extends Controller {
   prevTouchX: number = -1;
   cameraRadius: number = 6;
   cameraHeight: number = 3;
-  rotationSpeed: number = 0.2;
+  rotationSpeed: number = 0.4;
 
   constructor(
     player: Player,
