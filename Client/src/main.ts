@@ -70,9 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const playerName = playerNameInput.value.trim();
         if (playerName) {
           if (game && game.gameLoaded) {
-            const color = colorInput.value;
-            game.initializePlayer(playerName, color, game.socket);
-            gameStarted = true; // Set the game started flag
             // Hide the input UI
             const startScreen = document.getElementById("startScreen");
             if (startScreen) {
@@ -85,6 +82,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 mobileControls.style.display = "block"; // Show mobile controls
               }
             }
+
+
+            const color = colorInput.value;
+            game.initializePlayer(playerName, color, game.socket);
+            gameStarted = true; // Set the game started flag
           }
         }
       }

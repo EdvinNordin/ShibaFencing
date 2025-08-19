@@ -29,7 +29,7 @@ export class MobileController extends Controller {
     super(player, world, camera);
 
     this.joystick = nipplejs.create({
-      zone: joystickZone ?? undefined,
+      zone: joystickZone as HTMLElement,
       mode: "static",
       position: { left: "50%", top: "50%" },
       restOpacity: 1,
@@ -89,6 +89,7 @@ export class MobileController extends Controller {
 
     this.joystick.on("start", () => {
       this.moveReady = true;
+      this.joystickPosition.set(0, 0, 0);
     });
 
     this.joystick.on("move", (e, data) => {
@@ -99,7 +100,6 @@ export class MobileController extends Controller {
       this.moveReady = false;
       this.joystickPosition.set(0, 0, 0);
     });
-
     this.moveDirection = this.joystickPosition.clone();
   }
 }
