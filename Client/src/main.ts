@@ -67,7 +67,8 @@ document.addEventListener("DOMContentLoaded", () => {
       ) as HTMLInputElement;
 
       if (playerNameInput) {
-        const playerName = playerNameInput.value.trim();
+        let playerName = playerNameInput.value.trim();
+      if (playerName === "") playerName = " "; 
         if (playerName) {
           if (game && game.gameLoaded) {
             // Hide the input UI
