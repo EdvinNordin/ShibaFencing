@@ -33,6 +33,7 @@ export class Player {
     this.setColor(this.color);
 
     this.mesh.visible = true;
+    
     const box = new THREE.Box3().setFromObject(this.mesh); // Compute the bounding box
     box.getSize(size);
 
@@ -177,7 +178,7 @@ export class Player {
         child.name === "Group18985_default_0" &&
         child instanceof THREE.Mesh
       ) {
-        child.material = new THREE.MeshBasicMaterial({
+        child.material = new THREE.MeshToonMaterial({
           color: this.color,
         });
       }

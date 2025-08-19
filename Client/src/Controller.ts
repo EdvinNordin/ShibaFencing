@@ -11,7 +11,7 @@ export class Controller {
   targetRotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
   cameraTargetPosition: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   updatePosition: boolean = false;
-  rotationSpeed: number = game.deltaTime * 0.4;
+  rotationSpeed: number = 2;
   cameraRadius: number = 10;
   cameraHeight: number = 5;
   moveDirection: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
@@ -70,10 +70,10 @@ export class Controller {
 
   inputCheck() {
     if (this.input.isPressed("ArrowLeft"))
-      (this.camera.userData.orbitAngle += this.rotationSpeed),
+      (this.camera.userData.orbitAngle += this.rotationSpeed * game.deltaTime),
         (this.rotateReady = true);
     if (this.input.isPressed("ArrowRight"))
-      (this.camera.userData.orbitAngle -= this.rotationSpeed),
+      (this.camera.userData.orbitAngle -= this.rotationSpeed * game.deltaTime),
         (this.rotateReady = true);
     if (this.camera.userData.orbitAngle === undefined)
       this.camera.userData.orbitAngle = 0;
@@ -109,7 +109,7 @@ export class Controller {
 
     currentPos.lerp(
       this.cameraTargetPosition,
-      1 - Math.pow(0.01, game.deltaTime)
+      0.1//1 - Math.pow(0.01, game.deltaTime)
     );
 
     if (
@@ -146,26 +146,14 @@ export class Controller {
   }
 
   move() {
-    this.moveDirection.applyQuaternion(this.camera.quaternion);
-    this.moveDirection.y = 0;
-    this.moveDirection.normalize();
+    this.moveDirection.applyQuaternion(this.camera.quaternion).setY(0).normalize();
     this.moveDirection.multiplyScalar(this.player.speed * game.deltaTime);
 
-    const direction = new RAPIER.Vector3(
-      this.moveDirection.x,
-      this.moveDirection.y,
-      this.moveDirection.z
+    const nextPos = new RAPIER.Vector3(
+      this.player.position.x + this.moveDirection.x,
+      this.player.position.y,
+      this.player.position.z + this.moveDirection.z
     );
-
-    const nextPos = {
-      x: this.player.position.x + direction.x,
-      y: this.player.position.y + direction.y,
-      z: this.player.position.z + direction.z,
-    };
-
-    let nextPos3 = new THREE.Vector3(nextPos.x, nextPos.y, nextPos.z);
-
-    this.cameraTargetPosition.copy(this.offsetCalc(nextPos3));
 
     this.player.position = nextPos;
     this.updatePosition = true;
@@ -191,7 +179,7 @@ export class Controller {
   lerpPlayer(socket: WebSocket) {
     this.player.rotation.slerp(
       this.targetRotation,
-      1 - Math.pow(0.001, game.deltaTime)
+      0.15// - Math.pow(0.001, game.deltaTime)
     );
 
     if (this.player.rotation.angleTo(this.targetRotation) < 0.001) {

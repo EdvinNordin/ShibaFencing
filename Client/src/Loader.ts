@@ -19,6 +19,17 @@ export function loadModel(): Promise<THREE.Object3D> {
       model.position.set(0, 0.5, 0.5);
       model.traverse((child) => {
         if (child instanceof THREE.Mesh) {
+          // Preserve the texture from the original material
+          const originalMaterial = child.material;
+          const originalTexture = originalMaterial.map; // Get the texture
+
+          // Replace the material with MeshStandardMaterial
+          child.material = new THREE.MeshToonMaterial({
+            map: originalTexture, // Apply the original texture
+            color: originalMaterial.color, // Preserve the color
+            //roughness: 1, // Adjust roughness (optional)
+          });
+
           child.castShadow = true; // Enable shadow casting for the mesh
           child.receiveShadow = true; // Enable shadow receiving for the mesh
         }
@@ -36,9 +47,7 @@ export function loadWeapon(): Promise<THREE.Object3D> {
         if (child instanceof THREE.Mesh) {
           child.castShadow = true; // Enable shadow casting for the mesh
           child.receiveShadow = true; // Enable shadow receiving for the mesh
-        }
-        if (child instanceof THREE.Mesh) {
-          child.material = new THREE.MeshBasicMaterial({
+          child.material = new THREE.MeshToonMaterial({
             color: new THREE.Color(0.4, 0.4, 0.4),
           });
         }

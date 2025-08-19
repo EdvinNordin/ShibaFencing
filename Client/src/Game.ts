@@ -48,6 +48,7 @@ export class Game {
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap; 
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(this.renderer.domElement);
 
@@ -55,21 +56,25 @@ export class Game {
 
     this.socket = initializeWebSocket();
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    // Directional Light (Sunlight)
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 4);
     directionalLight.position.set(12, 10, 8);
     directionalLight.castShadow = true;
-    directionalLight.shadow.camera.top = 50;
-    directionalLight.shadow.camera.bottom = -50;
-    directionalLight.shadow.camera.left = -50;
-    directionalLight.shadow.camera.right = 50;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.mapSize.width = 1024;
+    directionalLight.shadow.mapSize.height = 1024; 
     directionalLight.shadow.camera.near = 0.5;
-    directionalLight.shadow.camera.far = 50;
+    directionalLight.shadow.camera.far = 30;
+    directionalLight.shadow.camera.top = 30;
+    directionalLight.shadow.camera.bottom = -30;
+    directionalLight.shadow.camera.left = -30;
+    directionalLight.shadow.camera.right = 30;
     this.scene.add(directionalLight);
 
+    const hemisphereLight = new THREE.HemisphereLight(0xd2f3d7, 0x003000, 1);
+    this.scene.add(hemisphereLight);
+
     let groundGeometry = new THREE.BoxGeometry(20, 1, 20);
-    let groundMaterial = new THREE.MeshStandardMaterial({ color: 0x1a7b29 });
+    let groundMaterial = new THREE.MeshToonMaterial({ color: 0x002500});//0x1a7b29 });
     let groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
     groundMesh.receiveShadow = true;
     groundMesh.position.set(0, -1, 0);
