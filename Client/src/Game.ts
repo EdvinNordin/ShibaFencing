@@ -60,8 +60,8 @@ export class Game {
     const directionalLight = new THREE.DirectionalLight(0xffffff, 4);
     directionalLight.position.set(12, 10, 8);
     directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 1024;
-    directionalLight.shadow.mapSize.height = 1024; 
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048; 
     directionalLight.shadow.camera.near = 0.5;
     directionalLight.shadow.camera.far = 30;
     directionalLight.shadow.camera.top = 30;
