@@ -124,6 +124,7 @@ export class NPCPlayer extends Player {
 
   runOut() {
     if(!this.isFleeing){
+      this.createNameTag("Fuck this, I'm out!")
       if (Math.abs(this.position.z) > Math.abs(this.position.x)) {
         this.targetPosition.z = this.position.z > 0 ? 20 : -20;
 
