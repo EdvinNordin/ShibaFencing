@@ -9,6 +9,8 @@ export function loadModel(): Promise<THREE.Object3D> {
     loader.load("shiba.glb", (gltf) => {
       const model = gltf.scene;
       model.name = "shiba";
+      model.castShadow = true;
+      model.receiveShadow = true;
       const pivot = new THREE.Object3D();
       pivot.add(model);
       pivot.name = "pivot";

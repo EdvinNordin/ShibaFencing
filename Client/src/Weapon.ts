@@ -143,8 +143,8 @@ export class Weapon {
           this.weaponHit(contactPoint1, opponent, socket);
           this.swapSide();
 
-          this.updateRotation(this.sideToQuaternion(this.side));
-          this.owner.isAttacking = false;
+          //this.updateRotation(this.sideToQuaternion(this.side));
+          //this.owner.isAttacking = false;
           return; // Exit after weaponHiting
 
           // If the weapon collider contacts the opponent's body
@@ -209,7 +209,7 @@ export class Weapon {
   }
 
   swapSide() {
-    this.side = this.side * -1; //=== Side.left ? Side.right : Side.left;
+    this.side = this.side * -1;
   }
 
   weaponHit(contactPoint: RAPIER.Vector, opponent: Player, socket: WebSocket) {

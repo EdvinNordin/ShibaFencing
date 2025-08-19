@@ -98,17 +98,11 @@ export function initializeWebSocket() {
         }
         break;
 
-      case "Parry Impact":
-        const attacker = game.findPlayer(data.attackerID);
-        const defender = game.findPlayer(data.defenderID);
-        game.Spark(
-          new RAPIER.Vector3(data.impact.x, data.impact.y, data.impact.z)
-        );
-        if (attacker && defender) {
-          const knockbackPosition = defender.weapon.knockbackCalc(attacker);
-          defender.updatePosition(knockbackPosition);
+      case "Swap Weapon Side":
+        const attacker = game.findPlayer(data.ID);
+        if (attacker) {
+          attacker.weapon.swapSide();
         }
-
         break;
 
       case "Player Death":
