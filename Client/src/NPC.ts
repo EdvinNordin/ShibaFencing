@@ -9,6 +9,7 @@ export class NPCPlayer extends Player {
   targetUpdateFrequency: number = 0;
   distanceToPlayer: number = Infinity;
   isFalling: boolean = true;
+  isFleeing: boolean = false;
   constructor(world: RAPIER.World) {
     super(
       world,
@@ -24,14 +25,20 @@ export class NPCPlayer extends Player {
   update() {
     if (!this.alive) return;
 
-    /* if (!game.botGame) {
-      this.runOut();
-
-      this.fallingPossibility();
-      return;
-    } */
+     
     if (!this.isFalling) {
-      if (
+
+      if (!game.botGame) {
+      
+        this.runOut();
+
+        this.updatePosition(this.position);
+        if (!this.targetRotation.equals(this.rotation)) {
+              this.slerpPlayer();
+            }
+      } 
+
+      else if (
         game.player !== null &&
         game.player.alive &&
         game.player.position.y === 0
@@ -116,13 +123,44 @@ export class NPCPlayer extends Player {
   }
 
   runOut() {
-    if (Math.abs(this.position.y) > Math.abs(this.position.x)) {
-      this.position.y +=
-        this.speed * game.deltaTime * (this.position.y > 0 ? 1 : -1);
-    } else {
-      this.position.x +=
-        this.speed * game.deltaTime * (this.position.x > 0 ? 1 : -1);
+    if(!this.isFleeing){
+      if (Math.abs(this.position.z) > Math.abs(this.position.x)) {
+        this.targetPosition.z = this.position.z > 0 ? 20 : -20;
+
+      } else {
+        this.targetPosition.x = this.position.x > 0 ? 20 : -20;
+      }
+      this.targetRotation.setFromUnitVectors(
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(
+        this.targetPosition.x - this.position.x,
+        0,
+        this.targetPosition.z - this.position.z
+      ).normalize()
+    );
+      this.isFleeing = true;
+  }
+     let direction = new THREE.Vector3();
+    direction.subVectors(this.targetPosition, this.position);
+    if (direction.length() < 1) {
+      this.targetPosition.copy(this.position);
+      this.targetUpdateFrequency = 0;
+      return;
     }
+    direction.normalize();
+    direction.y = 0;
+
+    let movement = direction.multiplyScalar(this.speed * 2 * game.deltaTime);
+
+    this.position = new RAPIER.Vector3(
+      this.position.x + movement.x,
+      this.position.y + movement.y,
+      this.position.z + movement.z
+    );
+
+    this.updatePosition(this.position);
+
+
   }
 
   findClosestPlayer() {
@@ -163,11 +201,6 @@ export class NPCPlayer extends Player {
       this.updatePosition(this.position);
     } else if (this.position.y < -20) {
       this.death();
-      this.updateHealthBar();
-      setTimeout(() => {
-        this.respawn();
-        this.updateHealthBar();
-      }, 3000);
     } else if (
       Math.abs(this.position.x) > 10.5 ||
       Math.abs(this.position.z) > 10.5

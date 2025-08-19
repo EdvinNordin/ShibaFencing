@@ -128,7 +128,7 @@ async function init() {
       });
     }
 
-    if (game.botGame && game.bot) {
+    if ((game.botGame && game.bot) || game.bot?.alive) {
       game.bot.update();
     }
 

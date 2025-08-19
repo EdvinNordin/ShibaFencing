@@ -1,11 +1,8 @@
-import * as THREE from "three";
-import RAPIER from "@dimforge/rapier3d-compat";
+/* import * as THREE from "three";
+import RAPIER from "@dimforge/rapier3d-compat"; */
 import { game } from "./main";
 import { Player } from "./Player";
 import { NPCPlayer } from "./NPC";
-
-let health = document.getElementById("hp") as HTMLDivElement;
-let hp = document.getElementById("currentHP");
 
 export function initializeWebSocket() {
   const socket = new WebSocket(import.meta.env.VITE_BACKEND_URL);
@@ -56,24 +53,12 @@ export function initializeWebSocket() {
 
         break;
 
-      /* case "NPC Update":
-        const npc = game.bot;
-        if (npc) {
-          npc.updatePosition(data.position);
-          npc.updateRotation(data.rotation);
-          npc.health = data.health;
-          npc.alive = data.alive;
-          npc.color = data.color;
-          npc.weapon.side = data.side;
-        }
-        break; */
-
       case "New Player":
         let newPlayer = new Player(game.world, data.name, data.color, data.ID);
         game.addPlayer(newPlayer);
         if (game.botGame && game.bot) {
           game.botGame = false;
-          game.bot.death();
+          //game.bot.death();
         }
         break;
 
@@ -149,7 +134,7 @@ export function initializeWebSocket() {
         break;
     }
 
-    if (game.player && game.player.ID !== null) {
+    //if (game.player && game.player.ID !== null) {
       switch (data.action) {
         case "Player Hit":
           const hitPlayer = game.findPlayer(data.ID);
@@ -164,7 +149,7 @@ export function initializeWebSocket() {
           }
           break;
       }
-    }
+    //}
   };
 
   socket.onopen = () => {

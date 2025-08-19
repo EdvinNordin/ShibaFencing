@@ -290,7 +290,7 @@ export class Controller {
       );
     } else if (
       this.player.position.y !== 0 &&
-      Math.abs(this.player.position.y) < 0.1
+      this.player.position.y < 0.1
     ) {
       this.player.position.y = 0;
       this.updatePosition = true;
