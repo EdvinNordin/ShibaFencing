@@ -8,6 +8,16 @@ import { isMobile } from "./main";
 import { initializeWebSocket } from "./Network";
 import { spark } from "./Loader";
 
+const gamemode = document.getElementById("gamemodeType") as HTMLSpanElement;
+const difficultyDIV = document.getElementsByClassName(
+  "toggle"
+)[0] as HTMLDivElement;
+
+enum Difficulty {
+  Easy = 1,
+  Hard = 2,
+}
+
 export class Game {
   scene: THREE.Scene;
   world: RAPIER.World;
@@ -23,7 +33,9 @@ export class Game {
   IDLoaded: boolean = false;
   opponentsLoaded: boolean = false;
   gameLoaded: boolean = false;
+  difficulty: Difficulty = 1;
   botGame: boolean = false;
+
   bot: NPCPlayer | null = null;
 
   constructor() {
@@ -48,7 +60,7 @@ export class Game {
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFShadowMap; 
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(this.renderer.domElement);
 
@@ -61,7 +73,7 @@ export class Game {
     directionalLight.position.set(12, 10, 8);
     directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048; 
+    directionalLight.shadow.mapSize.height = 2048;
     directionalLight.shadow.camera.near = 0.5;
     directionalLight.shadow.camera.far = 30;
     directionalLight.shadow.camera.top = 30;
@@ -74,7 +86,7 @@ export class Game {
     this.scene.add(hemisphereLight);
 
     let groundGeometry = new THREE.BoxGeometry(20, 1, 20);
-    let groundMaterial = new THREE.MeshToonMaterial({ color: 0x002500});//0x1a7b29 });
+    let groundMaterial = new THREE.MeshToonMaterial({ color: 0x002500 }); //0x1a7b29 });
     let groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
     groundMesh.receiveShadow = true;
     groundMesh.position.set(0, -1, 0);
@@ -171,10 +183,18 @@ export class Game {
     );
   }
 
-  spawnBot() {
-    /* const bot = new Player(this.world, "Bot", 0x00ff00, );
-    this.addPlayer(bot);
-    bot.spawn(); */
+  singleplayerMode() {
+    this.botGame = true;
+    this.bot?.createNameTag("Evil Shiba Bot");
+    this.bot?.respawn();
+    gamemode.innerText = "Singleplayer";
+    //difficultyDIV.style.display = "flex";
+  }
+
+  multiplayerMode() {
+    this.botGame = false;
+    gamemode.innerText = "Multiplayer";
+    //difficultyDIV.style.display = "none";
   }
 
   printPlayers() {

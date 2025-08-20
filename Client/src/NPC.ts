@@ -25,51 +25,145 @@ export class NPCPlayer extends Player {
   update() {
     if (!this.alive) return;
 
-     
-    if (!this.isFalling) {
+    if (this.isFalling) {
+      this.fallLogic();
+      return;
+    }
 
-      if (!game.botGame) {
-      
-        this.runOut();
-
-        this.updatePosition(this.position);
-        if (!this.targetRotation.equals(this.rotation)) {
-              this.slerpPlayer();
-            }
-      } 
-
-      else if (
-        game.player !== null &&
-        game.player.alive &&
-        game.player.position.y === 0
-      ) {
-        this.distanceToPlayer = this.mesh.position.distanceTo(
-          game.player.mesh.position
-        );
-        if (this.distanceToPlayer < 3 || this.isAttacking) {
-          this.attack();
-        } else {
-          this.targetRotation.setFromUnitVectors(
-            new THREE.Vector3(0, 0, 1),
-            new THREE.Vector3(
-              game.player.position.x - this.position.x,
-              0,
-              game.player.position.z - this.position.z
-            ).normalize()
-          );
-          if (!this.targetRotation.equals(this.rotation)) {
-            this.slerpPlayer();
-          }
-          this.moveTowardsPlayer(game.player!);
-        }
+    if (!game.botGame) {
+      this.runOut();
+    } else {
+      if (game.player?.position.y === 0) {
+        if (game.difficulty === 1) this.easyMode();
+        else if (game.difficulty === 2) this.fightPlayer();
       } else {
+        this.moveRandomly();
+
+        this.targetRotation = new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 0, 1),
+          new THREE.Vector3(
+            this.targetPosition.x - this.position.x,
+            0,
+            this.targetPosition.z - this.position.z
+          ).normalize()
+        );
+
         if (!this.targetRotation.equals(this.rotation)) {
           this.slerpPlayer();
         }
-        this.moveRandomly();
       }
     }
-    this.fallingPossibility();
+    this.fallLogic();
+  }
+
+  runOut() {
+    if (!this.isFleeing) {
+      this.createNameTag("Fuck this, I'm out!");
+      if (Math.abs(this.position.z) > Math.abs(this.position.x)) {
+        this.targetPosition.z = this.position.z > 0 ? 20 : -20;
+      } else {
+        this.targetPosition.x = this.position.x > 0 ? 20 : -20;
+      }
+      this.targetRotation.setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(
+          this.targetPosition.x - this.position.x,
+          0,
+          this.targetPosition.z - this.position.z
+        ).normalize()
+      );
+      this.isFleeing = true;
+    }
+    let direction = new THREE.Vector3();
+    direction.subVectors(this.targetPosition, this.position);
+    if (direction.length() < 1) {
+      this.targetPosition.copy(this.position);
+      this.targetUpdateFrequency = 0;
+      return;
+    }
+    direction.normalize();
+    direction.y = 0;
+
+    let movement = direction.multiplyScalar(this.speed * 2 * game.deltaTime);
+
+    this.position = new RAPIER.Vector3(
+      this.position.x + movement.x,
+      this.position.y + movement.y,
+      this.position.z + movement.z
+    );
+
+    this.updatePosition(this.position);
+
+    this.updatePosition(this.position);
+    if (!this.targetRotation.equals(this.rotation)) {
+      this.slerpPlayer();
+    }
+  }
+
+  easyMode() {
+    this.targetUpdateFrequency -= game.deltaTime;
+    const rand = Math.random();
+    if (rand > 0.98 || this.isAttacking) {
+      this.attack();
+      return;
+    }
+    if (rand < 0.05 && this.targetUpdateFrequency <= 0) {
+      this.targetPosition.set(
+        Math.random() * 20 - 10,
+        0,
+        Math.random() * 20 - 10
+      );
+
+      this.targetRotation.setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        this.targetPosition.clone().sub(this.position).normalize()
+      );
+      this.targetUpdateFrequency = 5000;
+    }
+
+    let direction = new THREE.Vector3();
+    direction.subVectors(this.targetPosition, this.position);
+    if (direction.length() < 1) {
+      this.targetPosition.copy(this.position);
+      this.targetUpdateFrequency = 0;
+      return;
+    }
+    direction.normalize();
+    direction.y = 0;
+
+    let movement = direction.multiplyScalar(this.speed * 0.5 * game.deltaTime);
+
+    this.position = new RAPIER.Vector3(
+      this.position.x + movement.x,
+      this.position.y + movement.y,
+      this.position.z + movement.z
+    );
+    if (!this.targetRotation.equals(this.rotation)) {
+      this.slerpPlayer();
+    }
+    this.updatePosition(this.position);
+  }
+
+  fightPlayer() {
+    this.distanceToPlayer = this.mesh.position.distanceTo(
+      game.player!.mesh.position
+    );
+    if (this.distanceToPlayer < 3 || this.isAttacking) {
+      this.attack();
+    } else {
+      this.targetRotation.setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(
+          game.player!.position.x - this.position.x,
+          0,
+          game.player!.position.z - this.position.z
+        ).normalize()
+      );
+      if (!this.targetRotation.equals(this.rotation)) {
+        this.slerpPlayer();
+      }
+      this.moveTowardsPlayer(game.player!);
+    }
   }
 
   moveTowardsPlayer(player: Player) {
@@ -85,7 +179,6 @@ export class NPCPlayer extends Player {
   }
 
   moveRandomly() {
-    // Simple random movement logic for the NPC
     this.targetUpdateFrequency -= game.deltaTime;
     if (Math.random() < 0.05 && this.targetUpdateFrequency <= 0) {
       this.targetPosition.set(
@@ -118,66 +211,10 @@ export class NPCPlayer extends Player {
       this.position.y + movement.y,
       this.position.z + movement.z
     );
-
-    this.updatePosition(this.position);
-  }
-
-  runOut() {
-    if(!this.isFleeing){
-      this.createNameTag("Fuck this, I'm out!")
-      if (Math.abs(this.position.z) > Math.abs(this.position.x)) {
-        this.targetPosition.z = this.position.z > 0 ? 20 : -20;
-
-      } else {
-        this.targetPosition.x = this.position.x > 0 ? 20 : -20;
-      }
-      this.targetRotation.setFromUnitVectors(
-      new THREE.Vector3(0, 0, 1),
-      new THREE.Vector3(
-        this.targetPosition.x - this.position.x,
-        0,
-        this.targetPosition.z - this.position.z
-      ).normalize()
-    );
-      this.isFleeing = true;
-  }
-     let direction = new THREE.Vector3();
-    direction.subVectors(this.targetPosition, this.position);
-    if (direction.length() < 1) {
-      this.targetPosition.copy(this.position);
-      this.targetUpdateFrequency = 0;
-      return;
+    if (!this.targetRotation.equals(this.rotation)) {
+      this.slerpPlayer();
     }
-    direction.normalize();
-    direction.y = 0;
-
-    let movement = direction.multiplyScalar(this.speed * 2 * game.deltaTime);
-
-    this.position = new RAPIER.Vector3(
-      this.position.x + movement.x,
-      this.position.y + movement.y,
-      this.position.z + movement.z
-    );
-
     this.updatePosition(this.position);
-
-
-  }
-
-  findClosestPlayer() {
-    let closestPlayer: Player | null = null;
-    let closestDistance = Infinity;
-
-    game.players.forEach((player) => {
-      if (player.ID !== this.ID && player.alive) {
-        const distance = this.mesh.position.distanceTo(player.mesh.position);
-        if (distance < closestDistance) {
-          this.distanceToPlayer = distance;
-          closestPlayer = player;
-        }
-      }
-    });
-    return closestPlayer;
   }
 
   slerpPlayer() {
@@ -193,7 +230,7 @@ export class NPCPlayer extends Player {
     this.weapon.Swing(game.socket);
   }
 
-  fallingPossibility() {
+  fallLogic() {
     const fallSpeed = 10 * game.deltaTime;
 
     if (this.position.y > 0) {
@@ -235,6 +272,22 @@ export class NPCPlayer extends Player {
     this.mesh.visible = true;
     this.updatePosition(new RAPIER.Vector3(0, 10, 0));
     this.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
+  }
+
+  findClosestPlayer() {
+    let closestPlayer: Player | null = null;
+    let closestDistance = Infinity;
+
+    game.players.forEach((player) => {
+      if (player.ID !== this.ID && player.alive) {
+        const distance = this.mesh.position.distanceTo(player.mesh.position);
+        if (distance < closestDistance) {
+          this.distanceToPlayer = distance;
+          closestPlayer = player;
+        }
+      }
+    });
+    return closestPlayer;
   }
 }
 

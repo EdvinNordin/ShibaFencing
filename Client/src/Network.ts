@@ -44,9 +44,10 @@ export function initializeWebSocket() {
           game.addPlayer(newPlayer);
         });
         if (game.players.size === 0) {
-          game.botGame = true;
           game.bot = new NPCPlayer(game.world);
-          game.bot.respawn();
+          game.singleplayerMode();
+        } else {
+          game.multiplayerMode();
         }
         game.opponentsLoaded = true;
         game.startGame();
@@ -57,8 +58,7 @@ export function initializeWebSocket() {
         let newPlayer = new Player(game.world, data.name, data.color, data.ID);
         game.addPlayer(newPlayer);
         if (game.botGame && game.bot) {
-          game.botGame = false;
-          //game.bot.death();
+          game.multiplayerMode();
         }
         break;
 
@@ -108,14 +108,13 @@ export function initializeWebSocket() {
         const disconnectedPlayer = game.findPlayer(data.ID);
         if (disconnectedPlayer) {
           game.removePlayer(disconnectedPlayer);
-          if (!game.botGame && game.players.size === 1 && game.bot) {
-            game.botGame = true;
-            game.bot.respawn();
+          if (game.players.size === 1) {
+            game.singleplayerMode();
           }
         }
         break;
 
-      case "Sync Players":
+      /* case "Sync Players":
         data.players.forEach((playerData: any) => {
           const existingPlayer = game.findPlayer(playerData.ID);
           if (existingPlayer) {
@@ -126,7 +125,7 @@ export function initializeWebSocket() {
             existingPlayer.weapon.side = playerData.side;
           }
         });
-        break;
+        break; */
 
       case "Server Error":
         console.log("Server Error");
@@ -135,20 +134,20 @@ export function initializeWebSocket() {
     }
 
     //if (game.player && game.player.ID !== null) {
-      switch (data.action) {
-        case "Player Hit":
-          const hitPlayer = game.findPlayer(data.ID);
-          if (!hitPlayer) return;
+    switch (data.action) {
+      case "Player Hit":
+        const hitPlayer = game.findPlayer(data.ID);
+        if (!hitPlayer) return;
 
-          hitPlayer.updatePosition(data.position);
+        hitPlayer.updatePosition(data.position);
 
-          hitPlayer.health = data.health;
+        hitPlayer.health = data.health;
 
-          if (hitPlayer === game.player) {
-            hitPlayer.updateHealthBar();
-          }
-          break;
-      }
+        if (hitPlayer === game.player) {
+          hitPlayer.updateHealthBar();
+        }
+        break;
+    }
     //}
   };
 

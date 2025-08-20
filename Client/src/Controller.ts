@@ -48,7 +48,7 @@ export class Controller {
     if (this.player.isAttacking && !this.isFalling)
       this.attackAnimation(socket);
 
-    if (this.player.alive) this.fallingPossibility(socket);
+    if (this.player.alive) this.fallLogic(socket);
 
     if (this.updatePosition && !this.player.isAttacking) {
       if (this.isFalling) {
@@ -109,7 +109,7 @@ export class Controller {
 
     currentPos.lerp(
       this.cameraTargetPosition,
-      0.1//1 - Math.pow(0.01, game.deltaTime)
+      0.1 //1 - Math.pow(0.01, game.deltaTime)
     );
 
     if (
@@ -146,7 +146,10 @@ export class Controller {
   }
 
   move() {
-    this.moveDirection.applyQuaternion(this.camera.quaternion).setY(0).normalize();
+    this.moveDirection
+      .applyQuaternion(this.camera.quaternion)
+      .setY(0)
+      .normalize();
     this.moveDirection.multiplyScalar(this.player.speed * game.deltaTime);
 
     const nextPos = new RAPIER.Vector3(
@@ -179,7 +182,7 @@ export class Controller {
   lerpPlayer(socket: WebSocket) {
     this.player.rotation.slerp(
       this.targetRotation,
-      0.15// - Math.pow(0.001, game.deltaTime)
+      0.15 // - Math.pow(0.001, game.deltaTime)
     );
 
     if (this.player.rotation.angleTo(this.targetRotation) < 0.001) {
@@ -220,7 +223,7 @@ export class Controller {
     this.player.weapon.Swing(socket);
   }
 
-  fallingPossibility(socket: WebSocket) {
+  fallLogic(socket: WebSocket) {
     const fallSpeed = 10 * game.deltaTime;
 
     if (this.player.position.y > 0) {
@@ -276,10 +279,7 @@ export class Controller {
           },
         })
       );
-    } else if (
-      this.player.position.y !== 0 &&
-      this.player.position.y < 0.1
-    ) {
+    } else if (this.player.position.y !== 0 && this.player.position.y < 0.1) {
       this.player.position.y = 0;
       this.updatePosition = true;
 
@@ -303,7 +303,10 @@ export class InputManager {
   keys: Record<string, boolean> = {};
 
   constructor() {
-    window.addEventListener("keydown", (e) => (this.keys[e.key] = true));
+    window.addEventListener(
+      "keydown",
+      (e) => ((this.keys[e.key] = true), e.preventDefault())
+    );
     window.addEventListener("keyup", (e) => (this.keys[e.key] = false));
   }
 

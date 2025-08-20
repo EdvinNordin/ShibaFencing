@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { positionViewDirection } from "three/tsl";
 
 const loader = new GLTFLoader();
 
@@ -15,23 +14,21 @@ export function loadModel(): Promise<THREE.Object3D> {
       pivot.add(model);
       pivot.name = "pivot";
 
-      // Offset the model to adjust the pivot point
       model.position.set(0, 0.5, 0.5);
       model.traverse((child) => {
         if (child instanceof THREE.Mesh) {
-          // Preserve the texture from the original material
+          
           const originalMaterial = child.material;
-          const originalTexture = originalMaterial.map; // Get the texture
+          const originalTexture = originalMaterial.map; 
 
           // Replace the material with MeshStandardMaterial
           child.material = new THREE.MeshToonMaterial({
-            map: originalTexture, // Apply the original texture
-            color: originalMaterial.color, // Preserve the color
-            //roughness: 1, // Adjust roughness (optional)
+            map: originalTexture, 
+            color: originalMaterial.color 
           });
 
-          child.castShadow = true; // Enable shadow casting for the mesh
-          child.receiveShadow = true; // Enable shadow receiving for the mesh
+          child.castShadow = true; 
+          child.receiveShadow = true; 
         }
       });
 

@@ -59,6 +59,35 @@ document.addEventListener("DOMContentLoaded", () => {
   const startGameForm = document.getElementById("startGameForm");
   const colorInput = document.getElementById("favcolor") as HTMLInputElement;
 
+  const checkBox = document.getElementById(
+    "difficultyCheckbox"
+  ) as HTMLInputElement;
+  const labelEasy = document.getElementsByClassName(
+    "labelEasy"
+  )[0] as HTMLElement;
+  const labelHard = document.getElementsByClassName(
+    "labelHard"
+  )[0] as HTMLElement;
+
+  if (checkBox.checked) {
+    labelHard.style.display = "block";
+    labelEasy.style.display = "none";
+  } else {
+    labelEasy.style.display = "block";
+    labelHard.style.display = "none";
+  }
+
+  checkBox.addEventListener("change", () => {
+    game.difficulty = checkBox.checked ? 2 : 1;
+    if (checkBox.checked) {
+      labelHard.style.display = "block";
+      labelEasy.style.display = "none";
+    } else {
+      labelEasy.style.display = "block";
+      labelHard.style.display = "none";
+    }
+  });
+
   if (startGameForm) {
     startGameForm.addEventListener("submit", (event) => {
       event.preventDefault(); // Prevent the default form submission behavior
@@ -68,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (playerNameInput) {
         let playerName = playerNameInput.value.trim();
-      if (playerName === "") playerName = " "; 
+        if (playerName === "") playerName = " ";
         if (playerName) {
           if (game && game.gameLoaded) {
             // Hide the input UI
@@ -84,7 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
               }
             }
 
-
+            game.difficulty = checkBox.checked ? 2 : 1;
             const color = colorInput.value;
             game.initializePlayer(playerName, color, game.socket);
             gameStarted = true; // Set the game started flag
