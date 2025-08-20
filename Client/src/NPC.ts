@@ -34,25 +34,16 @@ export class NPCPlayer extends Player {
       this.runOut();
     } else {
       if (game.player?.position.y === 0) {
-        if (game.difficulty === 1) this.easyMode();
-        else if (game.difficulty === 2) this.fightPlayer();
+        if (game.difficulty === 1) {
+          this.easyMode();
+          this.rotationCheck();
+        } else if (game.difficulty === 2) this.fightPlayer();
       } else {
         this.moveRandomly();
-
-        this.targetRotation = new THREE.Quaternion().setFromUnitVectors(
-          new THREE.Vector3(0, 0, 1),
-          new THREE.Vector3(
-            this.targetPosition.x - this.position.x,
-            0,
-            this.targetPosition.z - this.position.z
-          ).normalize()
-        );
-
-        if (!this.targetRotation.equals(this.rotation)) {
-          this.slerpPlayer();
-        }
+        this.rotationCheck();
       }
     }
+
     this.fallLogic();
   }
 
@@ -228,6 +219,21 @@ export class NPCPlayer extends Player {
 
   attack() {
     this.weapon.Swing(game.socket);
+  }
+
+  rotationCheck() {
+    this.targetRotation = new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(
+        this.targetPosition.x - this.position.x,
+        0,
+        this.targetPosition.z - this.position.z
+      ).normalize()
+    );
+
+    if (!this.targetRotation.equals(this.rotation)) {
+      this.slerpPlayer();
+    }
   }
 
   fallLogic() {
