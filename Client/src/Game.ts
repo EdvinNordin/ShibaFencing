@@ -35,7 +35,6 @@ export class Game {
   gameLoaded: boolean = false;
   difficulty: Difficulty = 1;
   botGame: boolean = false;
-
   bot: NPCPlayer | null = null;
 
   constructor() {

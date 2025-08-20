@@ -45,6 +45,7 @@ export function initializeWebSocket() {
         });
         if (game.players.size === 0) {
           game.bot = new NPCPlayer(game.world);
+          game.addPlayer(game.bot);
           game.singleplayerMode();
         } else {
           game.multiplayerMode();
