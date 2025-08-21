@@ -37,7 +37,14 @@ export class Controller {
     if (!this.camera.position.equals(this.cameraTargetPosition))
       this.updateCameraPosition();
 
-    if (this.moveReady && !this.isFalling && !this.player.isAttacking)
+    if (this.player.isKnockbacked) this.knockback();
+
+    if (
+      this.moveReady &&
+      !this.isFalling &&
+      !this.player.isAttacking &&
+      !this.player.isKnockbacked
+    )
       this.move();
 
     if (!this.targetRotation.equals(this.player.rotation))
@@ -295,6 +302,36 @@ export class Controller {
       );
     } else {
       this.isFalling = false;
+    }
+  }
+
+  knockback() {
+    if (
+      Math.abs(this.player.targetPosition.x - this.player.position.x) > 0.1 &&
+      Math.abs(this.player.targetPosition.z - this.player.position.z) > 0.1
+    ) {
+      let lerpVector = new THREE.Vector3(
+        this.player.position.x,
+        this.player.position.y,
+        this.player.position.z
+      );
+      lerpVector.lerp(this.player.targetPosition, 0.1);
+      this.player.position.x = lerpVector.x;
+      this.player.position.y = lerpVector.y;
+      this.player.position.z = lerpVector.z;
+      this.updatePosition = true;
+      game.socket.send(
+        JSON.stringify({
+          action: "Player Move",
+          position: {
+            x: this.player.position.x,
+            y: this.player.position.y,
+            z: this.player.position.z,
+          },
+        })
+      );
+    } else {
+      this.player.isKnockbacked = false;
     }
   }
 }

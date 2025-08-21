@@ -2,7 +2,8 @@ using Fleck;
 using System.Numerics;
 using System.Text.Json;
 
-class Program{
+class Program
+{
     static void Main(string[] args)
     {
 
@@ -264,7 +265,8 @@ class Program{
 
                                 var attackerKnockback = new
                                 {
-                                    action = "Player Move",
+                                    action = "Player Hit",
+                                    health = attacker.state.health,
                                     position = PlayerState.SerializeVector3(attacker.state.position),
                                     ID = attackerID
                                 };
@@ -277,7 +279,8 @@ class Program{
 
                                 var defenderKnockback = new
                                 {
-                                    action = "Player Move",
+                                    action = "Player Hit",
+                                    health = defender.state.health,
                                     position = PlayerState.SerializeVector3(defender.state.position),
                                     ID = defenderID
                                 };
@@ -287,7 +290,8 @@ class Program{
                                 {
                                     player.Value.connection.Send(JsonSerializer.Serialize(attackerKnockback));
                                     player.Value.connection.Send(JsonSerializer.Serialize(defenderKnockback));
-                                    if(player.Key != socketID){
+                                    if (player.Key != socketID)
+                                    {
                                         player.Value.connection.Send(JsonSerializer.Serialize(swapWeaponSide));
                                     }
                                 }

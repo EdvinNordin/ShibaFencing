@@ -152,7 +152,9 @@ export class Weapon {
           opponent.gotHit = true;
           if (game.botGame) {
             let knockbackPos = opponent.weapon.knockbackCalc(this.owner);
-            opponent.updatePosition(knockbackPos);
+            //opponent.updatePosition(knockbackPos);
+            opponent.targetPosition.copy(knockbackPos);
+            opponent.isKnockbacked = true;
             opponent.health -= this.damage;
             if (opponent.ID === game.playerID) {
               socket.send(
@@ -226,8 +228,14 @@ export class Weapon {
       game.Spark(contactPoint);
       const ownerKnockbackPos = this.knockbackCalc(opponent);
       const opponentKnockbackPos = opponent.weapon.knockbackCalc(this.owner);
-      this.owner.updatePosition(ownerKnockbackPos);
-      opponent.updatePosition(opponentKnockbackPos);
+
+      this.owner.targetPosition.copy(ownerKnockbackPos);
+      this.owner.isKnockbacked = true;
+
+      opponent.targetPosition.copy(opponentKnockbackPos);
+      opponent.isKnockbacked = true;
+      /* this.owner.updatePosition(ownerKnockbackPos);
+      opponent.updatePosition(opponentKnockbackPos); */
     } else if (this.owner === game.player) {
       game.Spark(contactPoint);
       if (game.botGame) {

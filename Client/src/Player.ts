@@ -22,6 +22,8 @@ export class Player {
   color: string;
   nameTag: THREE.Sprite | null = null;
   hitCounter: number = 0;
+  isKnockbacked: boolean = false;
+  targetPosition: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   //moveSound: THREE.PositionalAudio;
 
   constructor(world: RAPIER.World, name: string, color: string, ID: string) {
@@ -33,7 +35,7 @@ export class Player {
     this.setColor(this.color);
 
     this.mesh.visible = true;
-    
+
     const box = new THREE.Box3().setFromObject(this.mesh); // Compute the bounding box
     box.getSize(size);
 

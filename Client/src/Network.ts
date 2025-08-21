@@ -140,7 +140,8 @@ export function initializeWebSocket() {
         const hitPlayer = game.findPlayer(data.ID);
         if (!hitPlayer) return;
 
-        hitPlayer.updatePosition(data.position);
+        hitPlayer.targetPosition = data.position;
+        hitPlayer.isKnockbacked = true;
 
         hitPlayer.health = data.health;
 

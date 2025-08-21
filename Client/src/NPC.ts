@@ -30,6 +30,11 @@ export class NPCPlayer extends Player {
       return;
     }
 
+    if (this.isKnockbacked) {
+      this.knockback();
+      return;
+    }
+
     if (!game.botGame) {
       this.runOut();
     } else {
@@ -278,6 +283,26 @@ export class NPCPlayer extends Player {
     this.mesh.visible = true;
     this.updatePosition(new RAPIER.Vector3(0, 10, 0));
     this.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
+  }
+
+  knockback() {
+    if (
+      Math.abs(this.targetPosition.x - this.position.x) > 0.1 &&
+      Math.abs(this.targetPosition.z - this.position.z) > 0.1
+    ) {
+      let lerpVector = new THREE.Vector3(
+        this.position.x,
+        this.position.y,
+        this.position.z
+      );
+      lerpVector.lerp(this.targetPosition, 0.1);
+      this.position.x = lerpVector.x;
+      this.position.y = lerpVector.y;
+      this.position.z = lerpVector.z;
+      this.updatePosition(this.position);
+    } else {
+      this.isKnockbacked = false;
+    }
   }
 
   findClosestPlayer() {
