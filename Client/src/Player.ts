@@ -1,16 +1,16 @@
 import * as THREE from "three";
-import RAPIER from "@dimforge/rapier3d-compat";
 import { Weapon } from "./Weapon";
 import { model, game } from "./main";
+import { OBB } from "three/addons/math/OBB.js";
 //import { setAudio } from "./Loader";
 const size = new THREE.Vector3();
 export class Player {
   name: string;
   mesh: THREE.Object3D;
-  rigidBody: RAPIER.RigidBody;
-  collider: RAPIER.Collider;
-  offset: RAPIER.Vector3;
-  position: RAPIER.Vector3 = new RAPIER.Vector3(0, 10, 0);
+  //rigidBody: RAPIER.RigidBody;
+  collider: OBB;
+  //offset: RAPIER.Vector3;
+  position: THREE.Vector3 = new THREE.Vector3(0, 10, 0);
   rotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
   health: number = 100;
   speed: number = 7;
@@ -24,9 +24,9 @@ export class Player {
   hitCounter: number = 0;
   isKnockbacked: boolean = false;
   targetPosition: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
-  //moveSound: THREE.PositionalAudio;
+  obbDebug: THREE.LineSegments | null = null; // Add a property for the OBB visualizer
 
-  constructor(world: RAPIER.World, name: string, color: string, ID: string) {
+  constructor(name: string, color: string, ID: string) {
     this.ID = ID;
     this.name = name;
 
@@ -36,60 +36,34 @@ export class Player {
 
     this.mesh.visible = true;
 
-    const box = new THREE.Box3().setFromObject(this.mesh); // Compute the bounding box
-    box.getSize(size);
+    this.collider = new OBB();
+    this.collider.fromBox3(new THREE.Box3().setFromObject(this.mesh));
 
-    this.offset = new RAPIER.Vector3(size.x / 2, size.y / 2, size.z / 2);
-
-    const rbDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
-    this.rigidBody = world.createRigidBody(rbDesc);
-    this.rigidBody.setTranslation(this.position, true);
-    this.rigidBody.setRotation(this.rotation, true);
-    let colliderDesc = RAPIER.ColliderDesc.cuboid(
-      this.offset.x,
-      this.offset.y,
-      this.offset.z
-    );
-    this.collider = world.createCollider(colliderDesc, this.rigidBody);
-    this.collider.setSensor(true); // Set the collider as a sensor
-
-    this.weapon = new Weapon(world, this);
+    this.weapon = new Weapon(this);
     this.mesh.add(this.weapon.mesh);
     this.weapon.mesh.position.set(0, 0.4, 0.8);
 
     this.createNameTag(this.name);
 
     this.updatePosition(this.position);
-    /*
-    const moveSound = setAudio(game.audioListener, "move", 0.1);
-    if (!moveSound) {
-      throw new Error("Failed to create move sound audio.");
-    }
-    this.moveSound = moveSound;
-
-    this.mesh.add(this.moveSound);*/
+    this.createOBBDebug();
   }
 
-  updatePosition(position: RAPIER.Vector3) {
+  updatePosition(position: THREE.Vector3) {
     this.position = position;
     this.mesh.position.set(position.x, position.y, position.z);
-    this.rigidBody.setNextKinematicTranslation(position);
+    this.collider.center.copy(this.position);
 
-    const globalPosition = new THREE.Vector3();
-    this.weapon.mesh.getWorldPosition(globalPosition);
-    this.weapon.rigidBody.setNextKinematicTranslation(
-      new RAPIER.Vector3(globalPosition.x, globalPosition.y, globalPosition.z)
-    );
+    this.updateOBB();
+    this.weapon.updateOBB();
   }
 
   updateRotation(rotation: THREE.Quaternion) {
     this.rotation = rotation;
     this.mesh.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
-    this.rigidBody.setNextKinematicRotation(rotation);
 
-    let globalQuaternion = new THREE.Quaternion();
-    this.weapon.mesh.getWorldQuaternion(globalQuaternion);
-    this.weapon.rigidBody.setRotation(globalQuaternion, false);
+    this.updateOBB();
+    this.weapon.updateOBB();
   }
 
   death() {
@@ -97,6 +71,7 @@ export class Player {
     this.health = 0;
     this.mesh.visible = false;
     this.updateHealthBar();
+    this.isKnockbacked = false;
     setTimeout(() => {
       game.socket.send(
         JSON.stringify({
@@ -112,13 +87,13 @@ export class Player {
     this.alive = true;
     this.health = 100;
     this.mesh.visible = true;
-    this.updatePosition(new RAPIER.Vector3(0, 10, 0));
+    this.updatePosition(new THREE.Vector3(0, 10, 0));
     this.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
     this.updateHealthBar();
   }
 
   updateHealthBar() {
-    if (this === game.player) {
+    if (this === game.player && !game.debug) {
       let health = document.getElementById("hp") as HTMLDivElement;
       let hp = document.getElementById("currentHP");
       health.style.width = `${this.health}%`;
@@ -185,5 +160,37 @@ export class Player {
         });
       }
     });
+  }
+
+  updateOBB() {
+    this.mesh.updateWorldMatrix(true, true);
+    this.collider.center.setFromMatrixPosition(this.mesh.matrixWorld);
+    this.collider.rotation.setFromMatrix4(this.mesh.matrixWorld);
+
+    if (game.debug && this.obbDebug) {
+      this.obbDebug.position.copy(this.collider.center);
+      const rotation = new THREE.Quaternion();
+      const matrix4 = new THREE.Matrix4().setFromMatrix3(
+        this.collider.rotation
+      );
+      rotation.setFromRotationMatrix(matrix4);
+      this.obbDebug.setRotationFromQuaternion(rotation);
+    }
+  }
+  createOBBDebug() {
+    if (game.debug) {
+      const geometry = new THREE.BoxGeometry(1, 1, 1); // Unit box
+      const edges = new THREE.EdgesGeometry(geometry); // Create edges for wireframe
+      const material = new THREE.LineBasicMaterial({ color: 0x00ff00 }); // Green wireframe
+      this.obbDebug = new THREE.LineSegments(edges, material);
+
+      const size = new THREE.Vector3();
+      this.collider.getSize(size);
+      this.obbDebug.scale.copy(size);
+
+      game.scene.add(this.obbDebug); // Add the visualizer to the scene
+    } else {
+      this.obbDebug = null;
+    }
   }
 }

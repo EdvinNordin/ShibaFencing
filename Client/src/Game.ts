@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import RAPIER from "@dimforge/rapier3d-compat";
 import { Player } from "./Player";
 import { NPCPlayer } from "./NPC";
 import { Controller } from "./Controller";
@@ -9,7 +8,7 @@ import { initializeWebSocket } from "./Network";
 import { spark } from "./Loader";
 
 const gamemode = document.getElementById("gamemodeType") as HTMLSpanElement;
-const difficultyDIV = document.getElementsByClassName(
+const difficultyToggle = document.getElementsByClassName(
   "toggle"
 )[0] as HTMLDivElement;
 
@@ -20,7 +19,6 @@ enum Difficulty {
 
 export class Game {
   scene: THREE.Scene;
-  world: RAPIER.World;
   camera: THREE.PerspectiveCamera;
   //audioListener: THREE.AudioListener;
   renderer: THREE.WebGLRenderer;
@@ -36,13 +34,11 @@ export class Game {
   difficulty: Difficulty = 1;
   botGame: boolean = false;
   bot: NPCPlayer | null = null;
+  debug: boolean = false;
 
   constructor() {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xd2f3d7);
-
-    let gravity = { x: 0.0, y: -9.81, z: 0.0 };
-    this.world = new RAPIER.World(gravity);
 
     this.camera = new THREE.PerspectiveCamera(
       75,
@@ -90,13 +86,6 @@ export class Game {
     groundMesh.receiveShadow = true;
     groundMesh.position.set(0, -1, 0);
     this.scene.add(groundMesh);
-
-    let groundColliderDesc = RAPIER.ColliderDesc.cuboid(
-      10.0,
-      0.5,
-      10.0
-    ).setTranslation(0, -1, 0);
-    this.world.createCollider(groundColliderDesc);
   }
 
   updateDeltaTime(deltaTime: number) {
@@ -111,10 +100,6 @@ export class Game {
   removePlayer(oldPlayer: Player) {
     this.scene.remove(oldPlayer.mesh);
     this.players.delete(oldPlayer.ID);
-    this.world.removeRigidBody(oldPlayer.weapon.rigidBody);
-    this.world.removeCollider(oldPlayer.weapon.collider, false);
-    this.world.removeRigidBody(oldPlayer.rigidBody);
-    this.world.removeCollider(oldPlayer.collider, false);
   }
 
   findPlayer(ID: string): Player | undefined {
@@ -126,7 +111,7 @@ export class Game {
     return this.players.size;
   }
 
-  Spark(contactPoint: RAPIER.Vector) {
+  Spark(contactPoint: THREE.Vector3) {
     if (contactPoint) {
       const sparkInstance = spark.clone();
 
@@ -155,7 +140,7 @@ export class Game {
   }
 
   initializePlayer(name: string, color: string, socket: WebSocket) {
-    this.player = new Player(this.world, name, color, this.playerID);
+    this.player = new Player(name, color, this.playerID);
     this.addPlayer(this.player);
     this.player.createNameTag(name);
     this.player.setColor(color);
@@ -164,13 +149,9 @@ export class Game {
     }
 
     if (isMobile) {
-      this.controller = new MobileController(
-        this.player,
-        this.world,
-        this.camera
-      );
+      this.controller = new MobileController(this.player, this.camera);
     } else {
-      this.controller = new Controller(this.player, this.world, this.camera);
+      this.controller = new Controller(this.player, this.camera);
     }
 
     socket.send(
@@ -187,13 +168,13 @@ export class Game {
     this.bot?.createNameTag("Evil Shiba Bot");
     this.bot?.respawn();
     gamemode.innerText = "Singleplayer";
-    //difficultyDIV.style.display = "flex";
+    difficultyToggle.style.display = "flex";
   }
 
   multiplayerMode() {
     this.botGame = false;
     gamemode.innerText = "Multiplayer";
-    //difficultyDIV.style.display = "none";
+    difficultyToggle.style.display = "none";
   }
 
   printPlayers() {

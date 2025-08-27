@@ -17,18 +17,17 @@ export function loadModel(): Promise<THREE.Object3D> {
       model.position.set(0, 0.5, 0.5);
       model.traverse((child) => {
         if (child instanceof THREE.Mesh) {
-          
           const originalMaterial = child.material;
-          const originalTexture = originalMaterial.map; 
+          const originalTexture = originalMaterial.map;
 
           // Replace the material with MeshStandardMaterial
           child.material = new THREE.MeshToonMaterial({
-            map: originalTexture, 
-            color: originalMaterial.color 
+            map: originalTexture,
+            color: originalMaterial.color,
           });
 
-          child.castShadow = true; 
-          child.receiveShadow = true; 
+          child.castShadow = true;
+          child.receiveShadow = true;
         }
       });
 
@@ -39,7 +38,14 @@ export function loadModel(): Promise<THREE.Object3D> {
 
 export function loadWeapon(): Promise<THREE.Object3D> {
   return new Promise((resolve, reject) => {
-    loader.load("sword2.glb", (gltf) => {
+    loader.load("sword.glb", (gltf) => {
+      const pivot = new THREE.Object3D();
+      const scale = 0.25; //0.015;
+      gltf.scene.scale.set(scale, scale, scale);
+      //gltf.scene.rotateY(Math.PI);
+      pivot.add(gltf.scene);
+      pivot.name = "SwordPivot";
+      //pivot.position.set(0, 1.5, 0);
       gltf.scene.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           child.castShadow = true; // Enable shadow casting for the mesh
@@ -49,7 +55,7 @@ export function loadWeapon(): Promise<THREE.Object3D> {
           });
         }
       });
-      resolve(gltf.scene);
+      resolve(pivot);
     });
   });
 }

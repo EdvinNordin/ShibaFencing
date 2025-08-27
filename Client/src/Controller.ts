@@ -1,11 +1,9 @@
 import * as THREE from "three";
-import RAPIER from "@dimforge/rapier3d-compat";
 import { game } from "./main";
 import { Player } from "./Player";
 
 export class Controller {
   player: Player;
-  world: RAPIER.World;
   camera: THREE.PerspectiveCamera;
   input: InputManager = new InputManager();
   targetRotation: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
@@ -20,13 +18,8 @@ export class Controller {
   rotateReady: boolean = false;
   attackReady: boolean = false;
 
-  constructor(
-    player: Player,
-    world: RAPIER.World,
-    camera: THREE.PerspectiveCamera
-  ) {
+  constructor(player: Player, camera: THREE.PerspectiveCamera) {
     this.player = player;
-    this.world = world;
     this.camera = camera;
   }
 
@@ -37,7 +30,8 @@ export class Controller {
     if (!this.camera.position.equals(this.cameraTargetPosition))
       this.updateCameraPosition();
 
-    if (this.player.isKnockbacked) this.knockback();
+    if (this.player.isKnockbacked && this.player.alive && !this.isFalling)
+      this.knockback();
 
     if (
       this.moveReady &&
@@ -57,12 +51,15 @@ export class Controller {
 
     if (this.player.alive) this.fallLogic(socket);
 
-    if (this.updatePosition && !this.player.isAttacking) {
+    if (
+      this.updatePosition &&
+      (!this.player.isAttacking || this.player.isKnockbacked)
+    ) {
       if (this.isFalling) {
         this.player.updatePosition(this.player.position);
       } else {
         this.player.updatePosition(
-          new RAPIER.Vector3(this.player.position.x, 0, this.player.position.z)
+          new THREE.Vector3(this.player.position.x, 0, this.player.position.z)
         );
       }
     }
@@ -159,7 +156,7 @@ export class Controller {
       .normalize();
     this.moveDirection.multiplyScalar(this.player.speed * game.deltaTime);
 
-    const nextPos = new RAPIER.Vector3(
+    const nextPos = new THREE.Vector3(
       this.player.position.x + this.moveDirection.x,
       this.player.position.y,
       this.player.position.z + this.moveDirection.z
@@ -220,14 +217,14 @@ export class Controller {
       })
     );
 
-    this.player.weapon.Swing(socket);
+    this.player.weapon.Swing();
 
     //this.player.weapon.swingSound.play();
     this.attackReady = false;
   }
 
   attackAnimation(socket: WebSocket) {
-    this.player.weapon.Swing(socket);
+    this.player.weapon.Swing();
   }
 
   fallLogic(socket: WebSocket) {
@@ -307,8 +304,9 @@ export class Controller {
 
   knockback() {
     if (
-      Math.abs(this.player.targetPosition.x - this.player.position.x) > 0.1 &&
-      Math.abs(this.player.targetPosition.z - this.player.position.z) > 0.1
+      Math.abs(this.player.targetPosition.x - this.player.position.x) +
+        Math.abs(this.player.targetPosition.z - this.player.position.z) >
+      0.1
     ) {
       let lerpVector = new THREE.Vector3(
         this.player.position.x,
@@ -316,9 +314,11 @@ export class Controller {
         this.player.position.z
       );
       lerpVector.lerp(this.player.targetPosition, 0.1);
+
       this.player.position.x = lerpVector.x;
       this.player.position.y = lerpVector.y;
       this.player.position.z = lerpVector.z;
+
       this.updatePosition = true;
       game.socket.send(
         JSON.stringify({

@@ -64,7 +64,6 @@ class Program
                             action = "Remove Player",
                             ID = socketID
                         };
-
                         Players.Remove(socketID);
 
                         foreach (var player in Players)
@@ -288,10 +287,10 @@ class Program
 
                                 foreach (var player in Players)
                                 {
-                                    player.Value.connection.Send(JsonSerializer.Serialize(attackerKnockback));
                                     player.Value.connection.Send(JsonSerializer.Serialize(defenderKnockback));
                                     if (player.Key != socketID)
                                     {
+                                        player.Value.connection.Send(JsonSerializer.Serialize(attackerKnockback));
                                         player.Value.connection.Send(JsonSerializer.Serialize(swapWeaponSide));
                                     }
                                 }

@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import RAPIER from "@dimforge/rapier3d-compat";
 import { Player } from "./Player";
 import { game } from "./main";
 
@@ -10,13 +9,8 @@ export class NPCPlayer extends Player {
   distanceToPlayer: number = Infinity;
   isFalling: boolean = true;
   isFleeing: boolean = false;
-  constructor(world: RAPIER.World) {
-    super(
-      world,
-      "Evil Shiba Bot",
-      "black",
-      "00000000-0000-0000-0000-000000000000"
-    );
+  constructor() {
+    super("Evil Shiba Bot", "black", "00000000-0000-0000-0000-000000000000");
     this.alive = true;
     this.speed = 4;
     game.scene.add(this.mesh);
@@ -38,7 +32,7 @@ export class NPCPlayer extends Player {
     if (!game.botGame) {
       this.runOut();
     } else {
-      if (game.player?.position.y === 0) {
+      if (game.player?.position.y === 0 && game.player?.alive) {
         if (game.difficulty === 1) {
           this.easyMode();
           this.rotationCheck();
@@ -82,7 +76,7 @@ export class NPCPlayer extends Player {
 
     let movement = direction.multiplyScalar(this.speed * 2 * game.deltaTime);
 
-    this.position = new RAPIER.Vector3(
+    this.position = new THREE.Vector3(
       this.position.x + movement.x,
       this.position.y + movement.y,
       this.position.z + movement.z
@@ -129,7 +123,7 @@ export class NPCPlayer extends Player {
 
     let movement = direction.multiplyScalar(this.speed * 0.5 * game.deltaTime);
 
-    this.position = new RAPIER.Vector3(
+    this.position = new THREE.Vector3(
       this.position.x + movement.x,
       this.position.y + movement.y,
       this.position.z + movement.z
@@ -144,7 +138,7 @@ export class NPCPlayer extends Player {
     this.distanceToPlayer = this.mesh.position.distanceTo(
       game.player!.mesh.position
     );
-    if (this.distanceToPlayer < 3 || this.isAttacking) {
+    if (this.distanceToPlayer < game.bot!.weapon.range || this.isAttacking) {
       this.attack();
     } else {
       this.targetRotation.setFromUnitVectors(
@@ -166,7 +160,7 @@ export class NPCPlayer extends Player {
     const direction = new THREE.Vector3();
     direction.subVectors(player.position, this.position).normalize();
     const movement = direction.multiplyScalar(this.speed * game.deltaTime);
-    this.position = new RAPIER.Vector3(
+    this.position = new THREE.Vector3(
       this.position.x + movement.x,
       0,
       this.position.z + movement.z
@@ -202,7 +196,7 @@ export class NPCPlayer extends Player {
 
     let movement = direction.multiplyScalar(this.speed * 0.5 * game.deltaTime);
 
-    this.position = new RAPIER.Vector3(
+    this.position = new THREE.Vector3(
       this.position.x + movement.x,
       this.position.y + movement.y,
       this.position.z + movement.z
@@ -223,7 +217,7 @@ export class NPCPlayer extends Player {
   }
 
   attack() {
-    this.weapon.Swing(game.socket);
+    this.weapon.Swing();
   }
 
   rotationCheck() {
@@ -270,6 +264,7 @@ export class NPCPlayer extends Player {
     this.alive = false;
     this.health = 0;
     this.mesh.visible = false;
+    this.isKnockbacked = false;
     setTimeout(() => {
       if (game.botGame) {
         this.respawn();
@@ -281,7 +276,8 @@ export class NPCPlayer extends Player {
     this.alive = true;
     this.health = 100;
     this.mesh.visible = true;
-    this.updatePosition(new RAPIER.Vector3(0, 10, 0));
+    this.isKnockbacked = false;
+    this.updatePosition(new THREE.Vector3(0, 10, 0));
     this.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
   }
 
@@ -323,5 +319,5 @@ export class NPCPlayer extends Player {
 }
 
 function randomPosition() {
-  new RAPIER.Vector3(Math.random() * 20 - 10, 0, Math.random() * 20 - 10);
+  new THREE.Vector3(Math.random() * 20 - 10, 0, Math.random() * 20 - 10);
 }

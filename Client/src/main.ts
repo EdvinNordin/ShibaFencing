@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import RAPIER from "@dimforge/rapier3d-compat";
 import { Game } from "./Game";
 import { NPCPlayer } from "./NPC";
 import { loadModel, loadWeapon } from "./Loader";
@@ -125,14 +124,10 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function init() {
-  await RAPIER.init();
-
   model = await loadModel();
   weapon = await loadWeapon();
 
   game = new Game();
-
-  const debugRenderer = new RapierDebugRenderer(game.scene, game.world);
 
   // Add event listeners for window resize
   window.addEventListener("resize", () => {
@@ -140,8 +135,6 @@ async function init() {
     game.camera.updateProjectionMatrix();
     game.renderer.setSize(window.innerWidth, window.innerHeight);
   });
-
-  //const socket = initializeWebSocket();
 
   let clock = new THREE.Clock();
   let deltaTime = 0;
@@ -153,56 +146,32 @@ async function init() {
 
     if (gameStarted && game.controller) {
       game.controller.updateController(game.socket);
+
       game.players.forEach((player) => {
         if (player.isAttacking) {
-          player.weapon.Swing(game.socket);
+          player.weapon.Swing();
         }
       });
     }
 
     if ((game.botGame && game.bot) || game.bot?.alive) {
       game.bot.update();
+      //checkCollision();
     }
 
-    game.world.step();
     game.renderer.render(game.scene, game.camera);
-
-    //debugRenderer.update();
   }
   game.renderer.setAnimationLoop(update);
 }
 
 init();
 
-class RapierDebugRenderer {
-  mesh;
-  world;
-  enabled = true;
-
-  constructor(scene: THREE.Scene, world: RAPIER.World) {
-    this.world = world;
-    this.mesh = new THREE.LineSegments(
-      new THREE.BufferGeometry(),
-      new THREE.LineBasicMaterial({ color: 0xffffff, vertexColors: true })
-    );
-    this.mesh.frustumCulled = false;
-    scene.add(this.mesh);
-  }
-
-  update() {
-    if (this.enabled) {
-      const { vertices, colors } = this.world.debugRender();
-      this.mesh.geometry.setAttribute(
-        "position",
-        new THREE.BufferAttribute(vertices, 3)
-      );
-      this.mesh.geometry.setAttribute(
-        "color",
-        new THREE.BufferAttribute(colors, 4)
-      );
-      this.mesh.visible = true;
+function checkCollision() {
+  if (game.player && game.bot) {
+    if (game.bot.weapon.collider.intersectsOBB(game.player.collider)) {
+      console.log("Sword hit player!");
     } else {
-      this.mesh.visible = false;
+      console.log("Sword missed player!");
     }
   }
 }

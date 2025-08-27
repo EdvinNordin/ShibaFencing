@@ -1,5 +1,3 @@
-/* import * as THREE from "three";
-import RAPIER from "@dimforge/rapier3d-compat"; */
 import { game } from "./main";
 import { Player } from "./Player";
 import { NPCPlayer } from "./NPC";
@@ -22,7 +20,6 @@ export function initializeWebSocket() {
           if (!playerData.initialized) return;
           //if (game.playerID === playerData.ID) return;
           let newPlayer = new Player(
-            game.world,
             playerData.name,
             playerData.color,
             playerData.ID
@@ -44,7 +41,7 @@ export function initializeWebSocket() {
           game.addPlayer(newPlayer);
         });
         if (game.players.size === 0) {
-          game.bot = new NPCPlayer(game.world);
+          game.bot = new NPCPlayer();
           game.addPlayer(game.bot);
           game.singleplayerMode();
         } else {
@@ -56,7 +53,7 @@ export function initializeWebSocket() {
         break;
 
       case "New Player":
-        let newPlayer = new Player(game.world, data.name, data.color, data.ID);
+        let newPlayer = new Player(data.name, data.color, data.ID);
         game.addPlayer(newPlayer);
         if (game.botGame && game.bot) {
           game.multiplayerMode();
@@ -80,7 +77,7 @@ export function initializeWebSocket() {
       case "Player Attack":
         const attackingPlayer = game.findPlayer(data.ID);
         if (attackingPlayer) {
-          attackingPlayer.weapon.Swing(socket);
+          attackingPlayer.weapon.Swing();
         }
         break;
 
@@ -109,7 +106,13 @@ export function initializeWebSocket() {
         const disconnectedPlayer = game.findPlayer(data.ID);
         if (disconnectedPlayer) {
           game.removePlayer(disconnectedPlayer);
-          if (game.players.size === 1) {
+          let amount = 0;
+          game.players.forEach((p) => {
+            if (p.ID !== game.playerID && p.ID !== game.bot?.ID) {
+              amount++;
+            }
+          });
+          if (amount < 2) {
             game.singleplayerMode();
           }
         }
@@ -140,7 +143,11 @@ export function initializeWebSocket() {
         const hitPlayer = game.findPlayer(data.ID);
         if (!hitPlayer) return;
 
-        hitPlayer.targetPosition = data.position;
+        hitPlayer.targetPosition.set(
+          data.position.x,
+          data.position.y,
+          data.position.z
+        );
         hitPlayer.isKnockbacked = true;
 
         hitPlayer.health = data.health;

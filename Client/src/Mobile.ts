@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import RAPIER from "@dimforge/rapier3d-compat";
 import { game } from "./main";
 import { Player } from "./Player";
 import { Controller } from "./Controller";
@@ -21,12 +20,8 @@ export class MobileController extends Controller {
   cameraHeight: number = 3;
   rotationSpeed: number = 0.4;
 
-  constructor(
-    player: Player,
-    world: RAPIER.World,
-    camera: THREE.PerspectiveCamera
-  ) {
-    super(player, world, camera);
+  constructor(player: Player, camera: THREE.PerspectiveCamera) {
+    super(player, camera);
 
     this.joystick = nipplejs.create({
       zone: joystickZone as HTMLElement,
