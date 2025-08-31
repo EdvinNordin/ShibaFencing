@@ -90,14 +90,27 @@
 
 #instructions {
   font-size: 18px;
-  top: 10px;
   position: absolute;
+  color: rgb(200, 200, 200);
+  bottom: 10px;
+  left: 10px;
+  z-index: 100;
+}
+
+#leaderboard {
+  position: absolute;
+  font-size: 18px;
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
-  color: rgb(50, 50, 50);
-  text-shadow: none;
   z-index: 100;
+  color: rgb(50, 50, 50);
+}
+
+#leaderboardList {
+  list-style: none;
+  padding: 0;
 }
 
 #startScreen {

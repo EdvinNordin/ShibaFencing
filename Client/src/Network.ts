@@ -102,6 +102,18 @@ export function initializeWebSocket() {
         }
         break;
 
+      case "Leaderboard Update":
+        const leaderboard = document.getElementById("leaderboardList");
+        if (leaderboard) {
+          leaderboard.innerHTML = "";
+          data.leaderboard.forEach((entry: any) => {
+            const li = document.createElement("li");
+            li.textContent = `${entry.name}: ${entry.kills} kills`;
+            leaderboard.appendChild(li);
+          });
+        }
+        break;
+
       case "Remove Player":
         const disconnectedPlayer = game.findPlayer(data.ID);
         if (disconnectedPlayer) {

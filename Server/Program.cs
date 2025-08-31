@@ -1,16 +1,21 @@
 using Fleck;
+using Supabase.Postgrest.Attributes;
 using System.Numerics;
 using System.Text.Json;
 
+
 class Program
 {
-    static void Main(string[] args)
+    static Supabase.Client? supabase;
+    static Dictionary<Guid, (IWebSocketConnection connection, PlayerState state)> Players = [];
+    static async Task Main(string[] args)
     {
+        DotNetEnv.Env.Load();
+        supabase = await InitializeSupabase();
 
         var port = Environment.GetEnvironmentVariable("PORT") ?? "8181";
         var websocketServer = new WebSocketServer($"ws://0.0.0.0:{port}");
 
-        Dictionary<Guid, (IWebSocketConnection connection, PlayerState state)> Players = [];
 
 
         websocketServer.Start(connection =>
@@ -18,8 +23,10 @@ class Program
             Guid socketID = connection.ConnectionInfo.Id;
             PlayerState socketPlayer = new PlayerState();
             Players.Add(socketID, (connection, socketPlayer));
+
+
             // new player connects
-            connection.OnOpen = () =>
+            connection.OnOpen = async () =>
                 {
                     // Set the ID for the new player
                     var setID = new
@@ -27,7 +34,7 @@ class Program
                         action = "Set ID",
                         ID = socketID
                     };
-                    connection.Send(JsonSerializer.Serialize(setID));
+                    await connection.Send(JsonSerializer.Serialize(setID));
 
                     if (Players.Count > 0)
                     {
@@ -50,10 +57,12 @@ class Program
                                 side = p.Value.state.side
                             }).ToList()
                         };
-                        connection.Send(JsonSerializer.Serialize(sendOldPlayers));
+                        await connection.Send(JsonSerializer.Serialize(sendOldPlayers));
                     }
+                    await checkLeaderboard();
 
                 };
+
 
             // player disconnects
             connection.OnClose = () =>
@@ -73,7 +82,7 @@ class Program
 
                     };
 
-            connection.OnMessage = message =>
+            connection.OnMessage = async message =>
                 {
                     try
                     {
@@ -110,7 +119,7 @@ class Program
                                 {
                                     if (player.Key != socketID)
                                     {
-                                        player.Value.connection.Send(JsonSerializer.Serialize(newPlayer));
+                                        await player.Value.connection.Send(JsonSerializer.Serialize(newPlayer));
                                     }
                                 }
                                 break;
@@ -134,7 +143,7 @@ class Program
 
                                 foreach (var player in Players)
                                 {
-                                    if (player.Key != socketID) player.Value.connection.Send(JsonSerializer.Serialize(playerMove));
+                                    if (player.Key != socketID) await player.Value.connection.Send(JsonSerializer.Serialize(playerMove));
                                 }
                                 break;
 
@@ -157,7 +166,7 @@ class Program
 
                                 foreach (var player in Players)
                                 {
-                                    if (player.Key != socketID) player.Value.connection.Send(JsonSerializer.Serialize(playerRotate));
+                                    if (player.Key != socketID) await player.Value.connection.Send(JsonSerializer.Serialize(playerRotate));
                                 }
                                 break;
 
@@ -165,17 +174,14 @@ class Program
 
                                 foreach (var player in Players)
                                 {
-
-                                    //var hitPlayer = Players[socketID]; // Default to self
                                     if (player.Key != socketID)
                                     {
-                                        // Notify other players about the attack
                                         var playerAttack = new
                                         {
                                             action = "Player Attack",
                                             ID = socketID
                                         };
-                                        player.Value.connection.Send(JsonSerializer.Serialize(playerAttack));
+                                        await player.Value.connection.Send(JsonSerializer.Serialize(playerAttack));
                                     }
                                 }
                                 break;
@@ -205,12 +211,21 @@ class Program
 
                                 hitPlayer.state.health -= damage; // Apply damage
 
-
+                                if (Math.Abs(hitPlayer.state.position.X) > 10.5f || Math.Abs(hitPlayer.state.position.Z) > 10.5f)
+                                {
+                                    attacking.state.killStreak += 1;
+                                }
 
                                 if (hitPlayer.state.health <= 0)
                                 {
                                     hitPlayer.state.alive = false; // Player is dead
                                     hitPlayer.state.health = 0; // Ensure health doesn't go below 0
+
+                                    attacking.state.killStreak += 1;
+                                    if (attackingID == socketID)
+                                    {
+                                        socketPlayer.killStreak += 1;
+                                    }
 
                                     var healthZero = new
                                     {
@@ -219,7 +234,7 @@ class Program
                                     };
                                     foreach (var player in Players)
                                     {
-                                        player.Value.connection.Send(JsonSerializer.Serialize(healthZero));
+                                        await player.Value.connection.Send(JsonSerializer.Serialize(healthZero));
                                     }
                                 }
                                 else
@@ -236,7 +251,7 @@ class Program
 
                                     foreach (var player in Players)
                                     {
-                                        player.Value.connection.Send(JsonSerializer.Serialize(playerHit));
+                                        await player.Value.connection.Send(JsonSerializer.Serialize(playerHit));
                                     }
                                 }
                                 break;
@@ -261,6 +276,11 @@ class Program
                                 defender.state.setPosition(defender.state.position.X - knockbackDirection.X,
                                                     0,
                                                     defender.state.position.Z - knockbackDirection.Z);
+
+                                if (Math.Abs(defender.state.position.X) > 10.5f || Math.Abs(defender.state.position.Z) > 10.5f)
+                                {
+                                    attacker.state.killStreak += 1;
+                                }
 
                                 var attackerKnockback = new
                                 {
@@ -287,11 +307,11 @@ class Program
 
                                 foreach (var player in Players)
                                 {
-                                    player.Value.connection.Send(JsonSerializer.Serialize(defenderKnockback));
+                                    await player.Value.connection.Send(JsonSerializer.Serialize(defenderKnockback));
                                     if (player.Key != socketID)
                                     {
-                                        player.Value.connection.Send(JsonSerializer.Serialize(attackerKnockback));
-                                        player.Value.connection.Send(JsonSerializer.Serialize(swapWeaponSide));
+                                        await player.Value.connection.Send(JsonSerializer.Serialize(attackerKnockback));
+                                        await player.Value.connection.Send(JsonSerializer.Serialize(swapWeaponSide));
                                     }
                                 }
                                 break;
@@ -301,6 +321,10 @@ class Program
                                 socketPlayer.alive = false; // Set player as dead
                                 socketPlayer.health = 0; // Set health to 0
 
+                                await sendKillstreak(socketPlayer.name, socketPlayer.killStreak);
+
+                                socketPlayer.killStreak = 0;
+
                                 var playerDeath = new
                                 {
                                     action = "Player Death",
@@ -308,7 +332,7 @@ class Program
                                 };
                                 foreach (var player in Players)
                                 {
-                                    if (player.Key != socketID) player.Value.connection.Send(JsonSerializer.Serialize(playerDeath));
+                                    if (player.Key != socketID) await player.Value.connection.Send(JsonSerializer.Serialize(playerDeath));
                                 }
                                 break;
 
@@ -328,7 +352,7 @@ class Program
                                 };
                                 foreach (var player in Players)
                                 {
-                                    if (player.Key != socketID) player.Value.connection.Send(JsonSerializer.Serialize(playerRespawn));
+                                    if (player.Key != socketID) await player.Value.connection.Send(JsonSerializer.Serialize(playerRespawn));
                                 }
                                 break;
 
@@ -345,7 +369,7 @@ class Program
                             message = ex.Message,
                             problem = message
                         };
-                        Players[socketID].connection.Send(JsonSerializer.Serialize(serverError));
+                        await Players[socketID].connection.Send(JsonSerializer.Serialize(serverError));
                     }
                 };
 
@@ -353,6 +377,65 @@ class Program
 
         WebApplication.CreateBuilder(args).Build().Run();
     }
+    static async Task sendKillstreak(string name, int killStreak)
+    {
+        if (supabase == null)
+        {
+            throw new InvalidOperationException("Supabase client is not initialized.");
+        }
+        var response = await supabase.From<killsLeaderboard>().Select("kills").Where(x => x.name == name).Get();
+        int kills = response.Models.FirstOrDefault()?.kills ?? 0;
+        if (killStreak > kills)
+        {
+            await supabase.From<killsLeaderboard>().Upsert(new killsLeaderboard { name = name, kills = killStreak });
+            await checkLeaderboard();
+        }
+    }
+
+    static async Task checkLeaderboard()
+    {
+        if (supabase == null)
+        {
+            throw new InvalidOperationException("Supabase client is not initialized.");
+        }
+        var response = await supabase.From<killsLeaderboard>().Select("name, kills").Order("kills", Supabase.Postgrest.Constants.Ordering.Descending).Limit(3).Get();
+        var leaderboard = response.Models.Select(x => new LeaderboardEntry { name = x.name, kills = x.kills }).ToList();
+        var leaderboardUpdate = new
+        {
+            action = "Leaderboard Update",
+            leaderboard = leaderboard
+        };
+
+        foreach (var player in Players)
+        {
+            await player.Value.connection.Send(JsonSerializer.Serialize(leaderboardUpdate));
+        }
+    }
+
+    static async Task<Supabase.Client> InitializeSupabase()
+    {
+        var url = Environment.GetEnvironmentVariable("SUPABASE_URL");
+        var key = Environment.GetEnvironmentVariable("SUPABASE_KEY");
+        if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(key))
+        {
+            throw new InvalidOperationException("Supabase URL or KEY environment variables are not set.");
+        }
+        var options = new Supabase.SupabaseOptions
+        {
+            AutoConnectRealtime = true
+        };
+        var supabase = new Supabase.Client(url, key, options);
+        await supabase.InitializeAsync();
+
+        return supabase;
+    }
+}
+
+class killsLeaderboard : Supabase.Postgrest.Models.BaseModel
+{
+    [PrimaryKey("name")]
+    public string name { get; set; } = "Player";
+    public int kills { get; set; } = 0;
 }
 
 
@@ -366,7 +449,7 @@ class PlayerState
     public string color { get; set; } = "#ff0000";
     public bool Initialized { get; set; } = false;
     public int side { get; set; } = -1;
-    //public DateTime lastActivity { get; set; } = DateTime.UtcNow;
+    public int killStreak { get; set; } = 0;
 
 
     public PlayerState()
@@ -397,6 +480,10 @@ class PlayerState
 
 }
 
-
+class LeaderboardEntry
+{
+    public string name { get; set; } = "Player";
+    public int kills { get; set; } = 0;
+}
 
 //gcloud run deploy webfightingbackend --source=Server --region=europe-north2 --allow-unauthenticated

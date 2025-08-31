@@ -24,8 +24,7 @@ export class Player {
   hitCounter: number = 0;
   isKnockbacked: boolean = false;
   targetPosition: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
-  obbDebug: THREE.LineSegments | null = null; // Add a property for the OBB visualizer
-
+  obbDebug: THREE.LineSegments | null = null;
   constructor(name: string, color: string, ID: string) {
     this.ID = ID;
     this.name = name;
