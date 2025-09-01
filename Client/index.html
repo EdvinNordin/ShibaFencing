@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Shiba Fencing</title>
+    <link rel="icon" href="" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  </head>
+
+  <body>
+    <div id="hpContainer">
+      <div id="hp"><span id="currentHP">100%</span></div>
+    </div>
+
+    <div id="gamemode">
+      <!--<p>Get a friend to play against each other!</p>-->
+      <p><span id="gamemodeType">Singleplayer</span> mode</p>
+    </div>
+
+    <!-- <div class="difficulty">
+      <div class="toggle">
+        <label class="switch">
+          <input type="checkbox" id="checkbox" />
+          <span class="slider round">
+            <span id="state-text" class="label"></span>
+          </span>
+        </label>
+      </div>
+    </div> -->
+
+    <div class="toggle">
+      <label class="switch">
+        <input type="checkbox" id="difficultyCheckbox" />
+        <span class="slider round"> </span>
+        <span class="labelEasy">Easy</span>
+        <span class="labelHard">Hard</span>
+      </label>
+    </div>
+
+    <div id="leaderboard">
+      <p>Killstreak Leaderboard</p>
+      <ol id="leaderboardList">
+        <!-- Dynamic leaderboard entries will be added here -->
+      </ol>
+    </div>
+
+    <div id="mobileControls">
+      <div id="joystickZone"></div>
+      <div id="swingButton"><img src="swing.png" /></div>
+    </div>
+
+    <div id="rotateZone"></div>
+    <img src="enter_fullscreen.svg" id="fullscreenButton" />
+    <img src="rotate.png" id="rotateScreenIcon" />
+
+    <div id="instructions">
+      <p>WASD - Move</p>
+      <p>Space - Swing</p>
+      <p>Left and Right - Rotate</p>
+    </div>
+    <div id="startScreen">
+      <h1>Welcome to Shiba Fencing!</h1>
+      <p>Choose a name and color to start playing</p>
+      <form id="startGameForm">
+        <div id="inputContainer">
+          <input
+            type="text"
+            id="playerNameInput"
+            placeholder="Enter a name"
+            required
+          />
+          <input type="color" id="favcolor" value="#ff0000" />
+        </div>
+        <button type="submit" id="startGameButton">Start Game</button>
+      </form>
+    </div>
+    <script>
+      // Ensure the toggle is off on page reload
+    </script>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

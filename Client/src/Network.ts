@@ -1,0 +1,187 @@
+import { game } from "./main";
+import { Player } from "./Player";
+import { NPCPlayer } from "./NPC";
+
+export function initializeWebSocket() {
+  const socket = new WebSocket(import.meta.env.VITE_BACKEND_URL);
+
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    switch (data.action) {
+      case "Set ID":
+        game.playerID = data.ID;
+        game.IDLoaded = true;
+        game.startGame();
+        break;
+
+      case "Send Old Players":
+        data.players.forEach((playerData: any) => {
+          if (!playerData.initialized) return;
+          //if (game.playerID === playerData.ID) return;
+          let newPlayer = new Player(
+            playerData.name,
+            playerData.color,
+            playerData.ID
+          );
+          if (playerData.alive) {
+            newPlayer.mesh.visible = true;
+          } else {
+            newPlayer.mesh.visible = false;
+          }
+          newPlayer.ID = playerData.ID;
+          newPlayer.health = playerData.health;
+          newPlayer.weapon.side = playerData.side;
+          newPlayer.weapon.updateRotation(
+            newPlayer.weapon.sideToQuaternion(playerData.side)
+          );
+
+          newPlayer.updatePosition(playerData.position);
+          newPlayer.updateRotation(playerData.rotation);
+          game.addPlayer(newPlayer);
+        });
+        if (game.players.size === 0) {
+          game.bot = new NPCPlayer();
+          game.addPlayer(game.bot);
+          game.singleplayerMode();
+        } else {
+          game.multiplayerMode();
+        }
+        game.opponentsLoaded = true;
+        game.startGame();
+        break;
+
+      case "New Player":
+        let newPlayer = new Player(data.name, data.color, data.ID);
+        game.addPlayer(newPlayer);
+        if (game.botGame) {
+          game.multiplayerMode();
+        }
+        break;
+
+      case "Player Move":
+        const movePlayer = game.findPlayer(data.ID);
+        if (movePlayer) {
+          movePlayer.updatePosition(data.position);
+        }
+        break;
+
+      case "Player Rotate":
+        const rotatePlayer = game.findPlayer(data.ID);
+        if (rotatePlayer) {
+          rotatePlayer.updateRotation(data.rotation);
+        }
+        break;
+
+      case "Player Attack":
+        const attackingPlayer = game.findPlayer(data.ID);
+        if (attackingPlayer) {
+          attackingPlayer.weapon.Swing();
+        }
+        break;
+
+      case "Swap Weapon Side":
+        const attacker = game.findPlayer(data.ID);
+        if (attacker) {
+          attacker.weapon.swapSide();
+        }
+        break;
+
+      case "Player Death":
+        const deadPlayer = game.findPlayer(data.ID);
+        if (deadPlayer) {
+          console.log("Opponent has died");
+          deadPlayer.death();
+        }
+        break;
+
+      case "Player Respawn":
+        const respawnPlayer = game.findPlayer(data.ID);
+        if (respawnPlayer) {
+          respawnPlayer.respawn();
+        }
+        break;
+
+      case "Leaderboard Update":
+        const leaderboard = document.getElementById("leaderboardList");
+        if (leaderboard) {
+          leaderboard.innerHTML = "";
+          data.leaderboard.forEach((entry: any) => {
+            const li = document.createElement("li");
+            li.textContent = `${entry.name}: ${entry.kills} kills`;
+            leaderboard.appendChild(li);
+          });
+        }
+        break;
+
+      case "Remove Player":
+        const disconnectedPlayer = game.findPlayer(data.ID);
+        if (disconnectedPlayer) {
+          game.removePlayer(disconnectedPlayer);
+          let amount = 0;
+          game.players.forEach((p) => {
+            if (p.ID !== game.playerID && p.ID !== game.bot?.ID) {
+              amount++;
+            }
+          });
+          if (amount < 2) {
+            game.singleplayerMode();
+          }
+        }
+        break;
+
+      /* case "Sync Players":
+        data.players.forEach((playerData: any) => {
+          const existingPlayer = game.findPlayer(playerData.ID);
+          if (existingPlayer) {
+            existingPlayer.updatePosition(playerData.position);
+            existingPlayer.updateRotation(playerData.rotation);
+            existingPlayer.health = playerData.health;
+            existingPlayer.alive = playerData.alive;
+            existingPlayer.weapon.side = playerData.side;
+          }
+        });
+        break; */
+
+      case "Server Error":
+        console.log("Server Error");
+        console.error("Server Error:", data.message, "In: ", data.problem);
+        break;
+    }
+
+    //if (game.player && game.player.ID !== null) {
+    switch (data.action) {
+      case "Player Hit":
+        const hitPlayer = game.findPlayer(data.ID);
+        if (!hitPlayer) return;
+
+        hitPlayer.targetPosition.set(
+          data.position.x,
+          data.position.y,
+          data.position.z
+        );
+        hitPlayer.isKnockbacked = true;
+
+        hitPlayer.health = data.health;
+
+        if (hitPlayer === game.player) {
+          hitPlayer.updateHealthBar();
+        }
+        break;
+    }
+    //}
+  };
+
+  socket.onopen = () => {
+    //console.log("Opened connection to server");
+  };
+
+  socket.onclose = () => {
+    //console.log("Disconnected from server");
+  };
+
+  socket.onerror = (error) => {
+    //console.error("WebSocket error:", error);
+  };
+  return socket;
+}
