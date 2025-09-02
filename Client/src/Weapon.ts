@@ -103,11 +103,10 @@ export class Weapon {
         hitPlayer.weapon.collider
       );
       const bodyContact = this.collider.intersectsOBB(hitPlayer.collider);
-
-      if (weaponContact) {
-        this.weaponHit(hitPlayer, attacker);
-      } else if (bodyContact) {
+      if (bodyContact) {
         this.bodyHit(hitPlayer, attacker);
+      } else if (weaponContact) {
+        this.weaponHit(hitPlayer, attacker);
       }
     });
   }

@@ -156,7 +156,6 @@ async function init() {
 
     if (game.bot && (game.botGame || game.bot.alive)) {
       game.bot.update();
-      console.log(game.botGame);
     }
 
     game.renderer.render(game.scene, game.camera);
