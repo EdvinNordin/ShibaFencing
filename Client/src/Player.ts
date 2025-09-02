@@ -25,6 +25,7 @@ export class Player {
   isKnockbacked: boolean = false;
   targetPosition: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   obbDebug: THREE.LineSegments | null = null;
+  deathTime: number = 0;
   constructor(name: string, color: string, ID: string) {
     this.ID = ID;
     this.name = name;
@@ -68,24 +69,54 @@ export class Player {
   death() {
     this.alive = false;
     this.health = 0;
-    this.mesh.visible = false;
     this.updateHealthBar();
     this.isKnockbacked = false;
-    setTimeout(() => {
+    this.deathTime = performance.now();
+    if (this.weapon.side === 1) {
+      const additionalQuat = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(0, 0, -Math.PI / 2)
+      );
+      this.mesh.quaternion.multiplyQuaternions(
+        this.mesh.quaternion,
+        additionalQuat
+      );
+    } else {
+      const additionalQuat = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(0, 0, Math.PI / 2)
+      );
+      this.mesh.quaternion.multiplyQuaternions(
+        this.mesh.quaternion,
+        additionalQuat
+      );
+    }
+  }
+
+  deathAnim() {
+    const elapsed = (performance.now() - this.deathTime) / 1000;
+
+    if (elapsed < 3) {
+      this.mesh.position.y -= 0.8 * game.deltaTime;
+    } else {
+      this.mesh.visible = false;
       game.socket.send(
         JSON.stringify({
           action: "Player Respawn",
         })
       );
-
       this.respawn();
-    }, 3000);
+    }
   }
 
   respawn() {
     this.alive = true;
     this.health = 100;
     this.mesh.visible = true;
+    this.mesh.children.forEach((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.material.opacity = 1;
+      }
+    });
+    game.controller?.targetRotation.set(0, 0, 0, 1);
     this.updatePosition(new THREE.Vector3(0, 10, 0));
     this.updateRotation(new THREE.Quaternion(0, 0, 0, 1));
     this.updateHealthBar();

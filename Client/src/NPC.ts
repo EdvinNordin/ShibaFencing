@@ -93,7 +93,10 @@ export class NPCPlayer extends Player {
   easyMode() {
     this.targetUpdateFrequency -= game.deltaTime;
     const rand = Math.random();
-    if (rand > 0.98 || this.isAttacking) {
+    this.distanceToPlayer = this.mesh.position.distanceTo(
+      game.player!.mesh.position
+    );
+    if (this.distanceToPlayer < game.bot!.weapon.range || this.isAttacking) {
       this.attack();
       return;
     }
@@ -263,13 +266,36 @@ export class NPCPlayer extends Player {
   death() {
     this.alive = false;
     this.health = 0;
-    this.mesh.visible = false;
     this.isKnockbacked = false;
-    setTimeout(() => {
-      if (game.botGame) {
-        this.respawn();
-      }
-    }, 3000);
+    this.deathTime = performance.now();
+    if (this.weapon.side === 1) {
+      const additionalQuat = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(0, 0, -Math.PI / 2)
+      );
+      this.mesh.quaternion.multiplyQuaternions(
+        this.mesh.quaternion,
+        additionalQuat
+      );
+    } else {
+      const additionalQuat = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(0, 0, Math.PI / 2)
+      );
+      this.mesh.quaternion.multiplyQuaternions(
+        this.mesh.quaternion,
+        additionalQuat
+      );
+    }
+  }
+
+  deathAnim() {
+    const elapsed = (performance.now() - this.deathTime) / 1000;
+
+    if (elapsed < 3) {
+      this.mesh.position.y -= 0.8 * game.deltaTime;
+    } else {
+      this.mesh.visible = false;
+      if (game.botGame) this.respawn();
+    }
   }
 
   respawn() {

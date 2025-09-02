@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { Game } from "./Game";
-import { NPCPlayer } from "./NPC";
 import { loadModel, loadWeapon } from "./Loader";
 import screenfull from "screenfull";
 
@@ -96,7 +95,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (playerNameInput) {
         let playerName = playerNameInput.value.trim();
-        if (playerName === "") playerName = " ";
         if (playerName) {
           if (game && game.gameLoaded) {
             // Hide the input UI
@@ -145,18 +143,20 @@ async function init() {
     game.updateDeltaTime(deltaTime);
 
     if (gameStarted && game.controller) {
-      game.controller.updateController(game.socket);
+      if (game.player?.alive) game.controller.updateController(game.socket);
 
       game.players.forEach((player) => {
-        if (player.isAttacking) {
+        if (!player.alive) {
+          player.deathAnim();
+        } else if (player.isAttacking) {
           player.weapon.Swing();
         }
       });
     }
 
-    if ((game.botGame && game.bot) || game.bot?.alive) {
+    if (game.bot && (game.botGame || game.bot.alive)) {
       game.bot.update();
-      //checkCollision();
+      console.log(game.botGame);
     }
 
     game.renderer.render(game.scene, game.camera);

@@ -49,13 +49,12 @@ export function initializeWebSocket() {
         }
         game.opponentsLoaded = true;
         game.startGame();
-
         break;
 
       case "New Player":
         let newPlayer = new Player(data.name, data.color, data.ID);
         game.addPlayer(newPlayer);
-        if (game.botGame && game.bot) {
+        if (game.botGame) {
           game.multiplayerMode();
         }
         break;
@@ -91,6 +90,7 @@ export function initializeWebSocket() {
       case "Player Death":
         const deadPlayer = game.findPlayer(data.ID);
         if (deadPlayer) {
+          console.log("Opponent has died");
           deadPlayer.death();
         }
         break;
