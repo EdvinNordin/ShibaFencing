@@ -13,13 +13,12 @@ class Program
         DotNetEnv.Env.Load();
         supabase = await InitializeSupabase();
 
-        var port = Environment.GetEnvironmentVariable("PORT") ?? "8181";
-        var websocketServer = new WebSocketServer($"ws://0.0.0.0:{port}");
-
-
+        var websocketServer = new WebSocketServer("ws://0.0.0.0:8181");
+        Console.WriteLine("WebSocket server started on ws://0.0.0.0:8181");
 
         websocketServer.Start(connection =>
         {
+            Console.WriteLine($"New player connected: {connection.ConnectionInfo.Id}");
             Guid socketID = connection.ConnectionInfo.Id;
             PlayerState socketPlayer = new PlayerState();
             Players.Add(socketID, (connection, socketPlayer));
