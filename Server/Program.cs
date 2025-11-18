@@ -11,6 +11,7 @@ class Program
     static async Task Main(string[] args)
     {
         DotNetEnv.Env.Load();
+
         supabase = await InitializeSupabase();
 
         var websocketServer = new WebSocketServer("ws://0.0.0.0:8181");
@@ -18,6 +19,7 @@ class Program
 
         websocketServer.Start(connection =>
         {
+
             Console.WriteLine($"New player connected: {connection.ConnectionInfo.Id}");
             Guid socketID = connection.ConnectionInfo.Id;
             PlayerState socketPlayer = new PlayerState();
@@ -374,7 +376,8 @@ class Program
 
         });
 
-        WebApplication.CreateBuilder(args).Build().Run();
+        await Task.Delay(Timeout.Infinite);
+        //WebApplication.CreateBuilder(args).Build().Run();
     }
     static async Task sendKillstreak(string name, int killStreak)
     {
@@ -421,7 +424,7 @@ class Program
         }
         var options = new Supabase.SupabaseOptions
         {
-            AutoConnectRealtime = true
+            AutoConnectRealtime = false
         };
         var supabase = new Supabase.Client(url, key, options);
         await supabase.InitializeAsync();
