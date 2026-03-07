@@ -1,0 +1,16 @@
+# Git
+.git
+.gitignore
+
+# Node modules
+Client/node_modules
+Client/dist
+
+# .NET build artifacts
+Server/bin
+Server/obj
+
+# IDE / OS files
+.vs
+*.user
+.DS_Store
