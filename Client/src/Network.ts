@@ -2,8 +2,20 @@ import { game } from "./main";
 import { Player } from "./Player";
 import { NPCPlayer } from "./NPC";
 
+function getBackendUrl(): string {
+  // Allow explicit override via build-time env var (e.g. for local dev or custom setups).
+  const envUrl = import.meta.env.VITE_BACKEND_URL;
+  if (envUrl) {
+    return envUrl;
+  }
+  // In production, connect to the same origin via the /ws path so that a single
+  // exposed port serves both the static client and WebSocket traffic (wss on https).
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${window.location.host}/ws`;
+}
+
 export function initializeWebSocket() {
-  const socket = new WebSocket(import.meta.env.VITE_BACKEND_URL);
+  const socket = new WebSocket(getBackendUrl());
 
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);

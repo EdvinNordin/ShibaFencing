@@ -7,10 +7,12 @@ RUN npm ci
 
 COPY Client/ .
 
-# VITE_BACKEND_URL sets the WebSocket server address used by the client.
-# Pass it at build time: docker build --build-arg VITE_BACKEND_URL=ws://<host>:8181 .
-# Defaults to ws://localhost:8181 for local development.
-ARG VITE_BACKEND_URL=ws://localhost:8181
+# VITE_BACKEND_URL overrides the WebSocket URL baked into the client bundle.
+# Leave unset (default) so the client auto-detects the backend via same-origin
+# /ws at runtime – required for platforms like shiper.app where only one port
+# is exposed.  Set explicitly only when you need a custom WebSocket endpoint:
+#   docker build --build-arg VITE_BACKEND_URL=ws://custom-host:8181 .
+ARG VITE_BACKEND_URL
 ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
 
 RUN npm run build
@@ -45,8 +47,7 @@ COPY nginx.conf /etc/nginx/sites-available/default
 COPY start.sh .
 RUN chmod +x start.sh
 
-# Port 80  – static client (nginx)
-# Port 8181 – WebSocket server (.NET)
-EXPOSE 80 8181
+# Port 80  – nginx (serves static client + proxies /ws to the .NET server)
+EXPOSE 80
 
 ENTRYPOINT ["./start.sh"]
