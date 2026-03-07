@@ -12,7 +12,7 @@ class Program
     {
         DotNetEnv.Env.Load();
 
-        supabase = await InitializeSupabase();
+        //supabase = await InitializeSupabase();
 
         var websocketServer = new WebSocketServer("ws://0.0.0.0:8181");
         Console.WriteLine("WebSocket server started on ws://0.0.0.0:8181");
@@ -60,7 +60,7 @@ class Program
                         };
                         await connection.Send(JsonSerializer.Serialize(sendOldPlayers));
                     }
-                    await checkLeaderboard();
+                    //await checkLeaderboard();
 
                 };
 
@@ -322,7 +322,7 @@ class Program
                                 socketPlayer.alive = false; // Set player as dead
                                 socketPlayer.health = 0; // Set health to 0
 
-                                await sendKillstreak(socketPlayer.name, socketPlayer.killStreak);
+                                //await sendKillstreak(socketPlayer.name, socketPlayer.killStreak);
 
                                 socketPlayer.killStreak = 0;
 
