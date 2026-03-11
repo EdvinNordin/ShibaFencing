@@ -441,51 +441,50 @@ class killsLeaderboard : Supabase.Postgrest.Models.BaseModel
 }*/
 
 
-class PlayerState
-{
-    public string name { get; set; } = "Player";
-    public Vector3 position { get; set; } = new Vector3(0, 0, 0);
-    public Quaternion rotation { get; set; } = new Quaternion(0, 0, 0, 1);
-    public int health { get; set; } = 100;
-    public bool alive { get; set; } = false;
-    public string color { get; set; } = "#ff0000";
-    public bool Initialized { get; set; } = false;
-    public int side { get; set; } = -1;
-    public int killStreak { get; set; } = 0;
+    class PlayerState
+    {
+        public string name { get; set; } = "Player";
+        public Vector3 position { get; set; } = new Vector3(0, 0, 0);
+        public Quaternion rotation { get; set; } = new Quaternion(0, 0, 0, 1);
+        public int health { get; set; } = 100;
+        public bool alive { get; set; } = false;
+        public string color { get; set; } = "#ff0000";
+        public bool Initialized { get; set; } = false;
+        public int side { get; set; } = -1;
+        public int killStreak { get; set; } = 0;
 
 
-    public PlayerState()
-    {
-        position = new Vector3(0, 0, 0);
-        rotation = new Quaternion(0, 0, 0, 1);
-        health = 100;
-    }
-    public void setPosition(float x, float y, float z)
-    {
-        position = new Vector3(x, y, z);
-        //lastActivity = DateTime.UtcNow; // Update last activity time
-    }
-    public void setRotation(float x, float y, float z, float w)
-    {
-        rotation = new Quaternion(x, y, z, w);
-        //lastActivity = DateTime.UtcNow; // Update last activity time
+        public PlayerState()
+        {
+            position = new Vector3(0, 0, 0);
+            rotation = new Quaternion(0, 0, 0, 1);
+            health = 100;
+        }
+        public void setPosition(float x, float y, float z)
+        {
+            position = new Vector3(x, y, z);
+            //lastActivity = DateTime.UtcNow; // Update last activity time
+        }
+        public void setRotation(float x, float y, float z, float w)
+        {
+            rotation = new Quaternion(x, y, z, w);
+            //lastActivity = DateTime.UtcNow; // Update last activity time
+        }
+
+        public static object SerializeVector3(Vector3 vector)
+        {
+            return new { x = vector.X, y = vector.Y, z = vector.Z };
+        }
+        public static object SerializeQuaternion(Quaternion quaternion)
+        {
+            return new { x = quaternion.X, y = quaternion.Y, z = quaternion.Z, w = quaternion.W };
+        }
+
     }
 
-    public static object SerializeVector3(Vector3 vector)
+    class LeaderboardEntry
     {
-        return new { x = vector.X, y = vector.Y, z = vector.Z };
+        public string name { get; set; } = "Player";
+        public int kills { get; set; } = 0;
     }
-    public static object SerializeQuaternion(Quaternion quaternion)
-    {
-        return new { x = quaternion.X, y = quaternion.Y, z = quaternion.Z, w = quaternion.W };
-    }
-
 }
-
-class LeaderboardEntry
-{
-    public string name { get; set; } = "Player";
-    public int kills { get; set; } = 0;
-}
-
-//gcloud run deploy webfightingbackend --source=Server --region=europe-north2 --allow-unauthenticated

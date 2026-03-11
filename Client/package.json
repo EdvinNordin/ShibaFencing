@@ -1,5 +1,5 @@
 {
-  "name": "interactive_architecture",
+  "name": "shiba fencing",
   "description": "my node project",
   "version": "1.0.0",
   "type": "module",
@@ -9,8 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@dimforge/rapier3d": "^0.17.3",
-    "@dimforge/rapier3d-compat": "^0.17.3",
     "express": "^4.21.2",
     "nipplejs": "^0.10.2",
     "screenfull": "^6.0.2",

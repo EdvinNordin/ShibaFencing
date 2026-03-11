@@ -3,7 +3,7 @@ import { Player } from "./Player";
 import { NPCPlayer } from "./NPC";
 
 export function initializeWebSocket() {
-  const socket = new WebSocket(import.meta.env.VITE_BACKEND_URL);
+  const socket = new WebSocket("ws://localhost:8181");
 
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
@@ -22,7 +22,7 @@ export function initializeWebSocket() {
           let newPlayer = new Player(
             playerData.name,
             playerData.color,
-            playerData.ID
+            playerData.ID,
           );
           if (playerData.alive) {
             newPlayer.mesh.visible = true;
@@ -33,7 +33,7 @@ export function initializeWebSocket() {
           newPlayer.health = playerData.health;
           newPlayer.weapon.side = playerData.side;
           newPlayer.weapon.updateRotation(
-            newPlayer.weapon.sideToQuaternion(playerData.side)
+            newPlayer.weapon.sideToQuaternion(playerData.side),
           );
 
           newPlayer.updatePosition(playerData.position);
@@ -158,7 +158,7 @@ export function initializeWebSocket() {
         hitPlayer.targetPosition.set(
           data.position.x,
           data.position.y,
-          data.position.z
+          data.position.z,
         );
         hitPlayer.isKnockbacked = true;
 
